@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { jiraRequest } from "../jira-client.js";
+import {z} from "zod";
+import {jiraRequest} from "../jira-client.js";
 
 export const registerSearchTickets = (server) => {
   server.registerTool(
@@ -7,20 +7,28 @@ export const registerSearchTickets = (server) => {
     {
       description: "Search Jira tickets using JQL query language",
       inputSchema: z.object({
-        jql: z.string().describe("JQL query, e.g. 'project = GEM AND status = \"In Progress\"'"),
-        max_results: z.number().default(50).optional().describe("Max results to return (default 50)"),
+        jql: z
+          .string()
+          .describe(
+            "JQL query, e.g. 'project = GEM AND status = \"In Progress\"'",
+          ),
+        max_results: z
+          .number()
+          .default(50)
+          .optional()
+          .describe("Max results to return (default 50)"),
       }),
     },
-    async ({ jql, max_results = 50 }) => {
+    async ({jql, max_results = 50}) => {
       try {
         const params = new URLSearchParams({
+          fields: "summary,status,assignee,priority,issuetype",
           jql,
           maxResults: String(max_results),
-          fields: "summary,status,assignee,priority,issuetype",
         });
         const data = await jiraRequest("GET", `/search?${params}`);
         if (!data.issues?.length) {
-          return { content: [{ type: "text", text: "No issues found" }] };
+          return {content: [{text: "No issues found", type: "text"}]};
         }
         const lines = data.issues.map((i) => {
           const f = i.fields;
@@ -31,10 +39,10 @@ export const registerSearchTickets = (server) => {
           `Found ${data.total} issue(s) (showing ${data.issues.length}):\n\n` +
           "KEY | Summary | Status | Assignee | Priority\n" +
           lines.join("\n");
-        return { content: [{ type: "text", text }] };
+        return {content: [{text, type: "text"}]};
       } catch (err) {
-        return { content: [{ type: "text", text: err.message }], isError: true };
+        return {content: [{text: err.message, type: "text"}], isError: true};
       }
-    }
+    },
   );
 };

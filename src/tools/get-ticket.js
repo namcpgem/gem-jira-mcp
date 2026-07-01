@@ -1,5 +1,8 @@
-import { z } from "zod";
-import { jiraRequest } from "../jira-client.js";
+import {z} from "zod";
+import {jiraRequest} from "../jira-client.js";
+
+const START_DATE_FIELD =
+  process.env.JIRA_START_DATE_FIELD || "customfield_11300";
 
 export const registerGetTicket = (server) => {
   server.registerTool(
@@ -10,7 +13,7 @@ export const registerGetTicket = (server) => {
         ticket_id: z.string().describe("Jira issue key, e.g. GEM-234"),
       }),
     },
-    async ({ ticket_id }) => {
+    async ({ticket_id}) => {
       try {
         const issue = await jiraRequest("GET", `/issue/${ticket_id}`);
         const f = issue.fields;
@@ -23,15 +26,16 @@ export const registerGetTicket = (server) => {
           `Status: ${f.status?.name}`,
           `Assignee: ${f.assignee?.displayName || "Unassigned"}`,
           `Priority: ${f.priority?.name || "None"}`,
+          `Start Date: ${f[START_DATE_FIELD] || "Not set"}`,
           `Due Date: ${f.duedate || "Not set"}`,
           `Labels: ${(f.labels || []).join(", ") || "None"}`,
           `Description:\n${f.description || "No description"}`,
           subtasks ? `Subtasks:\n${subtasks}` : "Subtasks: None",
         ].join("\n");
-        return { content: [{ type: "text", text }] };
+        return {content: [{text, type: "text"}]};
       } catch (err) {
-        return { content: [{ type: "text", text: err.message }], isError: true };
+        return {content: [{text: err.message, type: "text"}], isError: true};
       }
-    }
+    },
   );
 };
