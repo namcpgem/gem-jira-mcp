@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import "dotenv/config";
 
 import { registerGetTicket } from "./tools/get-ticket.js";
 import { registerTransitionTicket } from "./tools/transition-ticket.js";
