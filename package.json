@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "build": "node scripts/build.js",
-    "lint": "biome check --write . && tsc --noEmit"
+    "lint": "biome check --write . && tsc --noEmit",
+    "release": "node scripts/build.js && node scripts/release.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.1",
     "@types/node": "^26.0.1",
+    "archiver": "^8.0.0",
     "esbuild": "^0.28.1",
     "typescript": "^6.0.3"
   }

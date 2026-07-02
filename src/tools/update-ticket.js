@@ -9,7 +9,8 @@ export const registerUpdateTicket = (server) => {
     "update_ticket",
     {
       description:
-        "Update fields of a Jira ticket: summary, description, issue type, parent, labels, due date, start date, original estimate, implementation notes",
+        "Update fields of a Jira ticket: summary, description, issue type, parent, labels, due date, start date, original estimate, implementation notes. " +
+        'Note: converting between a standard issue type and Sub-task is a Jira REST API limitation and is not supported here — use Jira\'s UI "Move" action instead.',
       inputSchema: z.object({
         description: z.string().optional().describe("Replace full description"),
         due_date: z.string().optional().describe("Due date YYYY-MM-DD"),
@@ -87,6 +88,30 @@ export const registerUpdateTicket = (server) => {
         }
 
         await jiraRequest("PUT", `/issue/${ticket_id}`, body);
+
+        if (issue_type !== undefined) {
+          const check = await jiraRequest(
+            "GET",
+            `/issue/${ticket_id}?fields=issuetype`,
+          );
+          const actual = check.fields.issuetype.name;
+          if (actual !== issue_type) {
+            return {
+              content: [
+                {
+                  text:
+                    `${ticket_id} was updated, but Jira did not apply the issue type change ` +
+                    `(still "${actual}"). Jira's REST API silently rejects conversions between ` +
+                    `standard issue types and Sub-task. Use the "Move" action in the Jira UI instead, ` +
+                    `or create a new Sub-task and migrate the content.`,
+                  type: "text",
+                },
+              ],
+              isError: true,
+            };
+          }
+        }
+
         return {
           content: [{text: `${ticket_id} updated successfully`, type: "text"}],
         };

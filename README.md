@@ -36,7 +36,26 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 pnpm build
 ```
 
-Bundles the server into a single file at `dist/index.js` (via esbuild) for release/distribution.
+Bundles the server into a single file at `dist/index.js` (via esbuild).
+
+## Release
+
+```bash
+pnpm release
+```
+
+Builds the server and packages it into `release/jira-mcp-v<version>.zip`, containing:
+
+- `index.js` — bundled server, no `node_modules` required
+- `package.json` — name/version reference
+- `README.md`
+- `.env.example`
+
+### Using the release zip (end users)
+
+1. Extract `jira-mcp-v<version>.zip` to a folder, e.g. `C:\tools\jira-mcp`
+2. Copy `.env.example` to `.env` in that folder and fill in your Jira credentials, **or** set the env vars directly in your MCP client config (see below)
+3. Point your MCP client at the extracted `index.js` — no `npm install`/`pnpm install` needed, the file is self-contained
 
 ## Claude Code config
 
@@ -58,7 +77,7 @@ Add to `.claude/settings.json` (or `claude_desktop_config.json`):
 }
 ```
 
-For local development, point `args` at `src/index.js` instead.
+Adjust the path in `args` to wherever you extracted the release zip. For local development from source, point `args` at `src/index.js` instead.
 
 ## Tools
 
