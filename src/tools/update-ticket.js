@@ -9,9 +9,13 @@ export const registerUpdateTicket = (server) => {
     "update_ticket",
     {
       description:
-        "Update fields of a Jira ticket: summary, description, issue type, parent, labels, due date, start date, original estimate, implementation notes. " +
+        "Update fields of a Jira ticket: summary, description, issue type, parent, labels, due date, start date, original estimate, implementation notes, assignee. " +
         'Note: converting between a standard issue type and Sub-task is a Jira REST API limitation and is not supported here — use Jira\'s UI "Move" action instead.',
       inputSchema: z.object({
+        assignee: z
+          .string()
+          .optional()
+          .describe("Username to assign, or empty string to unassign"),
         description: z.string().optional().describe("Replace full description"),
         due_date: z.string().optional().describe("Due date YYYY-MM-DD"),
         implementation_notes: z
@@ -47,12 +51,16 @@ export const registerUpdateTicket = (server) => {
       due_date,
       start_date,
       original_estimate,
+      assignee,
     }) => {
       try {
         const fields = {};
 
         if (summary !== undefined) fields.summary = summary;
         if (description !== undefined) fields.description = description;
+        if (assignee !== undefined) {
+          fields.assignee = assignee ? {name: assignee} : null;
+        }
 
         if (implementation_notes !== undefined) {
           const current = await jiraRequest(

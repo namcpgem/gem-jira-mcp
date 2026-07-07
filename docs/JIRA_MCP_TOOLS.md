@@ -9,7 +9,7 @@
 Tham số:
 - `ticket_id` (required): Mã ticket. VD: `"GEM-234"`
 
-Trả về: key, summary, status, assignee, priority, start date, due date, labels, description, subtasks.
+Trả về: key, summary, status, assignee, reporter, priority, start date, due date, original estimate, labels, description, subtasks.
 
 ## 2. transition_ticket
 
@@ -36,6 +36,7 @@ Tham số:
 - `due_date` (optional): Ngày đến hạn định dạng YYYY-MM-DD.
 - `start_date` (optional): Ngày bắt đầu định dạng YYYY-MM-DD.
 - `original_estimate` (optional): Ước tính thời gian. VD: `"2h"`, `"1d 4h"`
+- `assignee` (optional): Username để gán ticket, để trống (`""`) để bỏ gán.
 
 ## 4. add_comment
 

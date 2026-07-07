@@ -25,6 +25,7 @@ export const registerGetTicket = (server) => {
           `Summary: ${f.summary}`,
           `Status: ${f.status?.name}`,
           `Assignee: ${f.assignee?.displayName || "Unassigned"}`,
+          `Reporter: ${f.reporter?.displayName || "Unknown"}`,
           `Priority: ${f.priority?.name || "None"}`,
           `Start Date: ${f[START_DATE_FIELD] || "Not set"}`,
           `Due Date: ${f.duedate || "Not set"}`,
