@@ -1,6 +1,9 @@
 import {z} from "zod";
 import {jiraRequest} from "../jira-client.js";
 
+const START_DATE_FIELD =
+  process.env.JIRA_START_DATE_FIELD || "customfield_11300";
+
 export const registerSearchTickets = (server) => {
   server.registerTool(
     "search_tickets",
@@ -22,7 +25,7 @@ export const registerSearchTickets = (server) => {
     async ({jql, max_results = 50}) => {
       try {
         const params = new URLSearchParams({
-          fields: "summary,status,assignee,priority,issuetype,timetracking",
+          fields: `summary,status,assignee,priority,issuetype,timetracking,duedate,${START_DATE_FIELD}`,
           jql,
           maxResults: String(max_results),
         });
@@ -34,11 +37,13 @@ export const registerSearchTickets = (server) => {
           const f = i.fields;
           const assignee = f.assignee?.displayName || "Unassigned";
           const estimate = f.timetracking?.originalEstimate || "-";
-          return `${i.key} | ${f.summary} | ${f.status?.name} | ${assignee} | ${f.priority?.name || "-"} | ${estimate}`;
+          const startDate = f[START_DATE_FIELD] || "-";
+          const dueDate = f.duedate || "-";
+          return `${i.key} | ${f.summary} | ${f.status?.name} | ${assignee} | ${f.priority?.name || "-"} | ${startDate} | ${dueDate} | ${estimate}`;
         });
         const text =
           `Found ${data.total} issue(s) (showing ${data.issues.length}):\n\n` +
-          "KEY | Summary | Status | Assignee | Priority | Original Estimate\n" +
+          "KEY | Summary | Status | Assignee | Priority | Start Date | Due Date | Original Estimate\n" +
           lines.join("\n");
         return {content: [{text, type: "text"}]};
       } catch (err) {

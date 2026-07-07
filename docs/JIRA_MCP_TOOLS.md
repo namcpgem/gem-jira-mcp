@@ -54,6 +54,8 @@ Tham số:
 - `jql` (required): Câu truy vấn JQL. VD: `"project = GEM AND status = 'In Progress'"`
 - `max_results` (optional): Số kết quả tối đa. Mặc định: 50.
 
+Trả về bảng: key, summary, status, assignee, priority, start date, due date, original estimate.
+
 ## 6. create_ticket
 
 Tạo ticket mới.
