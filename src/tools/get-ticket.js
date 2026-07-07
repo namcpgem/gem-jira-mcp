@@ -28,6 +28,7 @@ export const registerGetTicket = (server) => {
           `Priority: ${f.priority?.name || "None"}`,
           `Start Date: ${f[START_DATE_FIELD] || "Not set"}`,
           `Due Date: ${f.duedate || "Not set"}`,
+          `Original Estimate: ${f.timetracking?.originalEstimate || "Not set"}`,
           `Labels: ${(f.labels || []).join(", ") || "None"}`,
           `Description:\n${f.description || "No description"}`,
           subtasks ? `Subtasks:\n${subtasks}` : "Subtasks: None",

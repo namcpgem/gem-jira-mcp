@@ -22,7 +22,7 @@ export const registerSearchTickets = (server) => {
     async ({jql, max_results = 50}) => {
       try {
         const params = new URLSearchParams({
-          fields: "summary,status,assignee,priority,issuetype",
+          fields: "summary,status,assignee,priority,issuetype,timetracking",
           jql,
           maxResults: String(max_results),
         });
@@ -33,11 +33,12 @@ export const registerSearchTickets = (server) => {
         const lines = data.issues.map((i) => {
           const f = i.fields;
           const assignee = f.assignee?.displayName || "Unassigned";
-          return `${i.key} | ${f.summary} | ${f.status?.name} | ${assignee} | ${f.priority?.name || "-"}`;
+          const estimate = f.timetracking?.originalEstimate || "-";
+          return `${i.key} | ${f.summary} | ${f.status?.name} | ${assignee} | ${f.priority?.name || "-"} | ${estimate}`;
         });
         const text =
           `Found ${data.total} issue(s) (showing ${data.issues.length}):\n\n` +
-          "KEY | Summary | Status | Assignee | Priority\n" +
+          "KEY | Summary | Status | Assignee | Priority | Original Estimate\n" +
           lines.join("\n");
         return {content: [{text, type: "text"}]};
       } catch (err) {
