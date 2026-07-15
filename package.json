@@ -1,6 +1,6 @@
 {
   "bin": {
-    "jira-mcp": "dist/index.js"
+    "g-jira-mcp": "dist/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -46,7 +46,7 @@
   ],
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "jira-mcp",
+  "name": "g-jira-mcp",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/namcpgem/gem-jira-mcp.git"

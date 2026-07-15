@@ -10,7 +10,7 @@ Jira mcp là MCP server cho phép AI assistant (Claude Code, Claude Desktop, ...
 ## Cách 1: Dùng Claude Code CLI (khuyến nghị)
 
 ```bash
-claude mcp add jira-mcp npx -y github:pnam16/gem-jira-mcp \
+claude mcp add jira-mcp npx -y g-jira-mcp@latest \
   --env JIRA_HOST="https://jira.company.com" \
   --env JIRA_USERNAME="your_username" \
   --env JIRA_PASSWORD="your_password"
@@ -25,7 +25,7 @@ Thêm vào `.claude/settings.json` (hoặc `claude_desktop_config.json`):
   "mcpServers": {
     "jira-mcp": {
       "command": "npx",
-      "args": ["-y", "github:pnam16/gem-jira-mcp"],
+      "args": ["-y", "g-jira-mcp@latest"],
       "env": {
         "JIRA_HOST": "https://jira.company.com",
         "JIRA_USERNAME": "your_username",
@@ -74,17 +74,17 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 
 ## Danh sách công cụ (tools)
 
-| Tool                     | Chức năng                                                                            | Tham số chính                                                                                                                    |
-| ------------------------ | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `get_ticket`             | Lấy chi tiết ticket (summary, status, description, assignee, subtasks)               | `ticket_id`                                                                                                                      |
-| `search_tickets`         | Tìm kiếm bằng JQL                                                                    | `jql`, `max_results` (tùy chọn)                                                                                                  |
-| `create_ticket`          | Tạo issue với due date, start date, estimate, labels, parent (Sub-task)              | `project`, `summary`, `issue_type`, `body` (tùy chọn), `parent_key` (tùy chọn), dates/estimate/labels (tùy chọn)                 |
-| `update_ticket`          | Cập nhật summary, description, issue type, parent, labels, dates, estimate, assignee | `ticket_id`, kèm bất kỳ `summary`, `description`, `issue_type`, `parent_key`, `labels`, dates, `estimate`, `assignee` (tùy chọn) |
-| `transition_ticket`      | Đổi trạng thái ticket theo tên                                                       | `ticket_id`, `status`                                                                                                            |
-| `add_comment`            | Thêm comment                                                                         | `ticket_id`, `body`                                                                                                              |
-| `log_work`               | Log thời gian đã làm                                                                 | `ticket_id`, `time_spent`, `comment` (tùy chọn), `started` (tùy chọn)                                                            |
-| `link_issues`            | Tạo liên kết issue (Blocks, Relates to, ...)                                         | `inward_issue`, `outward_issue`, `link_type` (tùy chọn)                                                                          |
-| `generate_release_notes` | Tạo release notes dạng Markdown cho một fix version                                  | `fix_version`, `project` (tùy chọn)                                                                                              |
+| Tool                     | Chức năng                                                                                                         | Tham số chính                                                                                                                                                            |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `get_ticket`             | Lấy chi tiết đầy đủ của một ticket Jira theo key                                                                  | `ticket_id`                                                                                                                                                              |
+| `search_tickets`         | Tìm kiếm ticket Jira bằng JQL                                                                                     | `jql`, `max_results` (tùy chọn, mặc định 50)                                                                                                                             |
+| `create_ticket`          | Tạo một ticket Jira mới (Story, Task, Bug, Sub-task)                                                              | `project`, `summary`, `issue_type`, tùy chọn: `body`, `parent_key`, `due_date`, `start_date`, `original_estimate`, `labels`                                              |
+| `update_ticket`          | Cập nhật các field của ticket Jira (summary, description, type, parent, labels, dates, estimate, assignee, notes) | `ticket_id`, tùy chọn: `summary`, `description`, `issue_type`, `parent_key`, `labels`, `due_date`, `start_date`, `original_estimate`, `implementation_notes`, `assignee` |
+| `transition_ticket`      | Đổi trạng thái ticket theo tên                                                                                    | `ticket_id`, `status`                                                                                                                                                    |
+| `add_comment`            | Thêm comment vào ticket Jira                                                                                      | `ticket_id`, `body`                                                                                                                                                      |
+| `log_work`               | Log thời gian làm việc trên ticket Jira                                                                           | `ticket_id`, `time_spent`, tùy chọn: `comment`, `started`                                                                                                                |
+| `link_issues`            | Tạo liên kết giữa hai ticket Jira (e.g. Blocks, Relates to, Clones, Duplicate)                                    | `inward_issue`, `outward_issue`, tùy chọn: `link_type` (mặc định "Blocks")                                                                                               |
+| `generate_release_notes` | Tạo release notes dạng Markdown cho một fix version, nhóm theo loại issue                                         | `fix_version`, tùy chọn: `project`                                                                                                                                       |
 
 ### Lưu ý quan trọng
 
@@ -92,7 +92,7 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 - `duedate` là field chuẩn (`YYYY-MM-DD`); "Start date" là custom field, cấu hình qua `JIRA_START_DATE_FIELD`.
 - `search_tickets` dùng cú pháp JQL, ví dụ: `project = GEM AND status = 'In Progress'`.
 - `transition_ticket` khớp trạng thái đích theo tên và tự tìm transition ID tương ứng.
-- `update_ticket` chỉ đổi các field bạn truyền vào; bỏ qua field để giữ nguyên giá trị cũ. Truyền `assignee=""` để gỡ assignee.
+- `update_ticket` chỉ đổi các field bạn truyền vào; bỏ qua field để giữ nguyên giá trị cũ. Truyền `assignee=""` để gỡ assignee. `implementation_notes` sẽ được append thêm vào description.
 - `generate_release_notes` nhóm ticket theo loại thành Features / Improvements / Bug Fixes / Other.
 - Toàn bộ log ghi ra stderr; stdout dành riêng cho giao thức MCP.
 
