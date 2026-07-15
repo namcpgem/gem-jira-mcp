@@ -1,0 +1,22 @@
+{
+  "git": {
+    "commit": true,
+    "commitMessage": "chore: release v${version}",
+    "push": true,
+    "pushTags": true,
+    "requireCleanWorkingDir": true,
+    "tag": true,
+    "tagName": "v${version}"
+  },
+  "github": {
+    "release": true,
+    "releaseName": "v${version}"
+  },
+  "hooks": {
+    "after:release": "echo \"Released v${version}\"",
+    "before:init": ["npm run lint", "npm run build"]
+  },
+  "npm": {
+    "publish": false
+  }
+}

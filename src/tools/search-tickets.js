@@ -25,7 +25,7 @@ export const registerSearchTickets = (server) => {
     async ({jql, max_results = 50}) => {
       try {
         const params = new URLSearchParams({
-          fields: `summary,status,assignee,priority,issuetype,timetracking,duedate,${START_DATE_FIELD}`,
+          fields: `summary,status,assignee,priority,issuetype,timetracking,duedate,parent,${START_DATE_FIELD}`,
           jql,
           maxResults: String(max_results),
         });
@@ -39,11 +39,12 @@ export const registerSearchTickets = (server) => {
           const estimate = f.timetracking?.originalEstimate || "-";
           const startDate = f[START_DATE_FIELD] || "-";
           const dueDate = f.duedate || "-";
-          return `${i.key} | ${f.summary} | ${f.status?.name} | ${assignee} | ${f.priority?.name || "-"} | ${startDate} | ${dueDate} | ${estimate}`;
+          const parent = f.parent?.key || "-";
+          return `${i.key} | ${f.summary} | ${f.status?.name} | ${assignee} | ${f.priority?.name || "-"} | ${parent} | ${startDate} | ${dueDate} | ${estimate}`;
         });
         const text =
           `Found ${data.total} issue(s) (showing ${data.issues.length}):\n\n` +
-          "KEY | Summary | Status | Assignee | Priority | Start Date | Due Date | Original Estimate\n" +
+          "KEY | Summary | Status | Assignee | Priority | Parent | Start Date | Due Date | Original Estimate\n" +
           lines.join("\n");
         return {content: [{text, type: "text"}]};
       } catch (err) {
