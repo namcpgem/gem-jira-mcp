@@ -9,7 +9,7 @@ export const registerUpdateTicket = (server) => {
     "update_ticket",
     {
       description:
-        "Update fields of a Jira ticket: summary, description, issue type, parent, labels, due date, start date, original estimate, implementation notes, assignee. " +
+        "Update fields of a Jira ticket: summary, description, issue type, parent, labels, due date, start date, original estimate, implementation notes, assignee, priority. " +
         'Note: converting between a standard issue type and Sub-task is a Jira REST API limitation and is not supported here — use Jira\'s UI "Move" action instead.',
       inputSchema: z.object({
         assignee: z
@@ -35,6 +35,10 @@ export const registerUpdateTicket = (server) => {
           .string()
           .optional()
           .describe("Parent ticket key for Sub-task"),
+        priority: z
+          .string()
+          .optional()
+          .describe('Priority name, e.g. "High", "Medium", "Low"'),
         start_date: z.string().optional().describe("Start date YYYY-MM-DD"),
         summary: z.string().optional().describe("Replace ticket summary/title"),
         ticket_id: z.string().describe("Jira issue key, e.g. GEM-234"),
@@ -52,6 +56,7 @@ export const registerUpdateTicket = (server) => {
       start_date,
       original_estimate,
       assignee,
+      priority,
     }) => {
       try {
         const fields = {};
@@ -75,6 +80,7 @@ export const registerUpdateTicket = (server) => {
         }
 
         if (issue_type !== undefined) fields.issuetype = {name: issue_type};
+        if (priority !== undefined) fields.priority = {name: priority};
         if (parent_key !== undefined) fields.parent = {key: parent_key};
         if (labels !== undefined) fields.labels = labels;
         if (due_date !== undefined) fields.duedate = due_date;
@@ -96,6 +102,30 @@ export const registerUpdateTicket = (server) => {
         }
 
         await jiraRequest("PUT", `/issue/${ticket_id}`, body);
+
+        if (parent_key !== undefined) {
+          const check = await jiraRequest(
+            "GET",
+            `/issue/${ticket_id}?fields=parent`,
+          );
+          const actual = check.fields.parent?.key;
+          if (actual !== parent_key) {
+            return {
+              content: [
+                {
+                  text:
+                    `${ticket_id} was updated, but Jira did not apply the parent change ` +
+                    `(still "${actual || "no parent"}"). The Parent field is only editable on ` +
+                    `Sub-task issues, and Jira's REST API cannot convert an issue type to Sub-task ` +
+                    `directly. Use the Jira UI "Move" action: first convert the ticket to Task (if not ` +
+                    `already), then convert Task → Sub-task and set the parent in that same Move step.`,
+                  type: "text",
+                },
+              ],
+              isError: true,
+            };
+          }
+        }
 
         if (issue_type !== undefined) {
           const check = await jiraRequest(
