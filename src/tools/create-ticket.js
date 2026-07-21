@@ -52,16 +52,11 @@ export const registerCreateTicket = (server) => {
         if (due_date) fields.duedate = due_date;
         if (start_date) fields[START_DATE_FIELD] = start_date;
         if (labels?.length) fields.labels = labels;
-
-        const requestBody = {fields};
-
         if (original_estimate) {
-          requestBody.update = {
-            timetracking: [{edit: {originalEstimate: original_estimate}}],
-          };
+          fields.timetracking = {originalEstimate: original_estimate};
         }
 
-        const result = await jiraRequest("POST", "/issue", requestBody);
+        const result = await jiraRequest("POST", "/issue", {fields});
         const url = `${process.env.JIRA_HOST}/browse/${result.key}`;
         return {
           content: [{text: `Created ${result.key}: ${url}`, type: "text"}],
