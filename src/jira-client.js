@@ -9,9 +9,11 @@ const BASE = `${process.env.JIRA_HOST}/rest/api/2`;
 const AUTH = Buffer.from(
   `${process.env.JIRA_USERNAME}:${process.env.JIRA_PASSWORD}`,
 ).toString("base64");
+export const JIRA_HOST = process.env.JIRA_HOST;
+export const AUTH_HEADER = `Basic ${AUTH}`;
 const HEADERS = {
   Accept: "application/json",
-  Authorization: `Basic ${AUTH}`,
+  Authorization: AUTH_HEADER,
   "Content-Type": "application/json",
 };
 

@@ -65,6 +65,7 @@ Khởi động lại Claude Code/Desktop sau khi sửa config.
 | `JIRA_USERNAME`         | có       | Tên đăng nhập Jira                                                                       |
 | `JIRA_PASSWORD`         | có       | Mật khẩu Jira                                                                            |
 | `JIRA_START_DATE_FIELD` | không    | Custom field ID cho "Start date" (mặc định `customfield_11300`, khớp `pm.gem-corp.tech`) |
+| `JIRA_TIMEZONE`         | không    | Múi giờ cho form WorklogPRO (mặc định `Asia/Ho_Chi_Minh`)                                |
 
 Để tra custom field ID trên instance của bạn:
 
@@ -82,7 +83,7 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 | `update_ticket`          | Cập nhật các field của ticket Jira (summary, description, type, parent, labels, dates, estimate, assignee, priority, notes) | `ticket_id`, tùy chọn: `summary`, `description`, `issue_type`, `parent_key`, `labels`, `due_date`, `start_date`, `original_estimate`, `implementation_notes`, `assignee`, `priority` |
 | `transition_ticket`      | Đổi trạng thái ticket theo tên                                                                                              | `ticket_id`, `status`                                                                                                                                                                |
 | `add_comment`            | Thêm comment vào ticket Jira                                                                                                | `ticket_id`, `body`                                                                                                                                                                  |
-| `log_work`               | Log thời gian làm việc trên ticket Jira                                                                                     | `ticket_id`, `time_spent`, tùy chọn: `comment`, `started`                                                                                                                            |
+| `log_work`               | Log thời gian làm việc trên ticket, tùy chọn đặt WorklogPRO Type of Work và Type of Activity                                | `ticket_id`, `time_spent`, tùy chọn: `comment`, `started`, `work_type`, `activity`                                                                                                   |
 | `link_issues`            | Tạo liên kết giữa hai ticket Jira (e.g. Blocks, Relates to, Clones, Duplicate)                                              | `inward_issue`, `outward_issue`, tùy chọn: `link_type` (mặc định "Blocks")                                                                                                           |
 | `generate_release_notes` | Tạo release notes dạng Markdown cho một fix version, nhóm theo loại issue                                                   | `fix_version`, tùy chọn: `project`                                                                                                                                                   |
 
@@ -93,6 +94,7 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 - `search_tickets` dùng cú pháp JQL, ví dụ: `project = GEM AND status = 'In Progress'`.
 - `transition_ticket` khớp trạng thái đích theo tên và tự tìm transition ID tương ứng.
 - `update_ticket` chỉ đổi các field bạn truyền vào; bỏ qua field để giữ nguyên giá trị cũ. Truyền `assignee=""` để gỡ assignee. `implementation_notes` sẽ được append thêm vào description.
+- `log_work` chấp nhận alias có tên cho `work_type` (ví dụ: code, deploy, design, fix, testing) và `activity` (ví dụ: create, review, correct). `activity` bắt buộc khi đặt `work_type`. Nếu không đặt cả hai, sẽ log qua REST API thường (không dùng form WorklogPRO). Thời gian bắt đầu được diễn giải theo múi giờ server Jira (cấu hình qua `JIRA_TIMEZONE`).
 - `generate_release_notes` nhóm ticket theo loại thành Features / Improvements / Bug Fixes / Other.
 - Toàn bộ log ghi ra stderr; stdout dành riêng cho giao thức MCP.
 

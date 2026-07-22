@@ -60,7 +60,7 @@ Khi cài từ git, npm tự chạy script `prepare` (cấu hình `"prepare": "np
 
 ### 2. Zip thủ công (release/jira-mcp-v<version>.zip)
 
-Sau khi chạy `pnpm release` xong, chạy `pnpm archive` để đóng gói zip cho người dùng không có git, xem [Hướng dẫn cài đặt](JIRA_GUIDE.md).
+Sau khi chạy `pnpm release` xong, chạy `pnpm archive` để đóng gói zip cho người dùng không có git, xem [Hướng dẫn cài đặt](USAGE.md).
 
 Lưu ý: package chưa publish lên npm (tên `jira-mcp` đã bị chiếm bởi tài khoản khác). `.release-it.json` để `npm.publish: false`; phát hành qua GitHub + zip.
 
