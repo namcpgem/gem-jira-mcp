@@ -1,11 +1,10 @@
 import {z} from "zod";
-import {jiraRequest} from "../jira-client.js";
+import {defineTool} from "../define-tool.js";
+import {START_DATE_FIELD} from "../ticket-fields.js";
 
-const START_DATE_FIELD =
-  process.env.JIRA_START_DATE_FIELD || "customfield_11300";
-
-export const registerCreateTicket = (server) => {
-  server.registerTool(
+export const registerCreateTicket = (server, jiraRequest) => {
+  defineTool(
+    server,
     "create_ticket",
     {
       description: "Create a new Jira ticket (Story, Task, Bug, Sub-task)",
@@ -29,41 +28,39 @@ export const registerCreateTicket = (server) => {
         summary: z.string().describe("Issue title"),
       }),
     },
-    async ({
-      project,
-      summary,
-      issue_type,
-      body,
-      parent_key,
-      due_date,
-      start_date,
-      original_estimate,
-      labels,
-    }) => {
-      try {
-        const fields = {
-          issuetype: {name: issue_type},
-          project: {key: project},
-          summary,
-        };
+    async (
+      {
+        project,
+        summary,
+        issue_type,
+        body,
+        parent_key,
+        due_date,
+        start_date,
+        original_estimate,
+        labels,
+      },
+      jira,
+    ) => {
+      const fields = {
+        issuetype: {name: issue_type},
+        project: {key: project},
+        summary,
+      };
 
-        if (body) fields.description = body;
-        if (parent_key) fields.parent = {key: parent_key};
-        if (due_date) fields.duedate = due_date;
-        if (start_date) fields[START_DATE_FIELD] = start_date;
-        if (labels?.length) fields.labels = labels;
-        if (original_estimate) {
-          fields.timetracking = {originalEstimate: original_estimate};
-        }
-
-        const result = await jiraRequest("POST", "/issue", {fields});
-        const url = `${process.env.JIRA_HOST}/browse/${result.key}`;
-        return {
-          content: [{text: `Created ${result.key}: ${url}`, type: "text"}],
-        };
-      } catch (err) {
-        return {content: [{text: err.message, type: "text"}], isError: true};
+      if (body) fields.description = body;
+      if (parent_key) fields.parent = {key: parent_key};
+      if (due_date) fields.duedate = due_date;
+      if (start_date) fields[START_DATE_FIELD] = start_date;
+      if (labels?.length) fields.labels = labels;
+      if (original_estimate) {
+        fields.timetracking = {originalEstimate: original_estimate};
       }
+
+      const result = await jira("POST", "/issue", {fields});
+      const url = `${process.env.JIRA_HOST}/browse/${result.key}`;
+      return `Created ${result.key}: ${url}`;
     },
+    jiraRequest,
   );
 };

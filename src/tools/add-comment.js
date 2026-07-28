@@ -1,8 +1,9 @@
 import {z} from "zod";
-import {jiraRequest} from "../jira-client.js";
+import {defineTool} from "../define-tool.js";
 
-export const registerAddComment = (server) => {
-  server.registerTool(
+export const registerAddComment = (server, jiraRequest) => {
+  defineTool(
+    server,
     "add_comment",
     {
       description: "Add a comment to a Jira ticket",
@@ -11,20 +12,11 @@ export const registerAddComment = (server) => {
         ticket_id: z.string().describe("Jira issue key, e.g. GEM-234"),
       }),
     },
-    async ({ticket_id, body}) => {
-      try {
-        const result = await jiraRequest(
-          "POST",
-          `/issue/${ticket_id}/comment`,
-          {body},
-        );
-        const commentUrl = `${process.env.JIRA_HOST}/browse/${ticket_id}?focusedCommentId=${result.id}`;
-        return {
-          content: [{text: `Comment added: ${commentUrl}`, type: "text"}],
-        };
-      } catch (err) {
-        return {content: [{text: err.message, type: "text"}], isError: true};
-      }
+    async ({ticket_id, body}, jira) => {
+      const result = await jira("POST", `/issue/${ticket_id}/comment`, {body});
+      const commentUrl = `${process.env.JIRA_HOST}/browse/${ticket_id}?focusedCommentId=${result.id}`;
+      return `Comment added: ${commentUrl}`;
     },
+    jiraRequest,
   );
 };

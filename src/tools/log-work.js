@@ -1,8 +1,10 @@
 import {z} from "zod";
+import {defineTool} from "../define-tool.js";
 import {ACTIVITIES, logWorkPro, WORK_TYPES} from "../worklog-pro.js";
 
 export const registerLogWork = (server) => {
-  server.registerTool(
+  defineTool(
+    server,
     "log_work",
     {
       description:
@@ -32,42 +34,31 @@ export const registerLogWork = (server) => {
       }),
     },
     async ({ticket_id, time_spent, comment, started, work_type, activity}) => {
-      try {
-        const opts = {comment, started};
-        if (work_type) {
-          const id = WORK_TYPES[work_type.toLowerCase()];
-          if (id == null) {
-            throw new Error(
-              `Unknown work_type "${work_type}". Valid: ${Object.keys(WORK_TYPES).join(", ")}`,
-            );
-          }
-          opts.workType = id;
+      const opts = {comment, started};
+      if (work_type) {
+        const id = WORK_TYPES[work_type.toLowerCase()];
+        if (id == null) {
+          throw new Error(
+            `Unknown work_type "${work_type}". Valid: ${Object.keys(WORK_TYPES).join(", ")}`,
+          );
         }
-        if (activity) {
-          const id = ACTIVITIES[activity.toLowerCase()];
-          if (id == null) {
-            throw new Error(
-              `Unknown activity "${activity}". Valid: ${Object.keys(ACTIVITIES).join(", ")}`,
-            );
-          }
-          opts.activity = id;
-        }
-        const result = await logWorkPro(ticket_id, time_spent, opts);
-        const idNote = result?.id ? ` (worklog id: ${result.id})` : "";
-        const attrNote = work_type
-          ? ` [${work_type}${activity ? `/${activity}` : ""}]`
-          : "";
-        return {
-          content: [
-            {
-              text: `Logged ${time_spent} on ${ticket_id}${attrNote}${idNote}`,
-              type: "text",
-            },
-          ],
-        };
-      } catch (err) {
-        return {content: [{text: err.message, type: "text"}], isError: true};
+        opts.workType = id;
       }
+      if (activity) {
+        const id = ACTIVITIES[activity.toLowerCase()];
+        if (id == null) {
+          throw new Error(
+            `Unknown activity "${activity}". Valid: ${Object.keys(ACTIVITIES).join(", ")}`,
+          );
+        }
+        opts.activity = id;
+      }
+      const result = await logWorkPro(ticket_id, time_spent, opts);
+      const idNote = result?.id ? ` (worklog id: ${result.id})` : "";
+      const attrNote = work_type
+        ? ` [${work_type}${activity ? `/${activity}` : ""}]`
+        : "";
+      return `Logged ${time_spent} on ${ticket_id}${attrNote}${idNote}`;
     },
   );
 };

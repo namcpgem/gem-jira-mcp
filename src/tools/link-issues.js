@@ -1,8 +1,9 @@
 import {z} from "zod";
-import {jiraRequest} from "../jira-client.js";
+import {defineTool} from "../define-tool.js";
 
-export const registerLinkIssues = (server) => {
-  server.registerTool(
+export const registerLinkIssues = (server, jiraRequest) => {
+  defineTool(
+    server,
     "link_issues",
     {
       description:
@@ -20,24 +21,14 @@ export const registerLinkIssues = (server) => {
           .describe("Issue key being linked TO, e.g. GEM-2"),
       }),
     },
-    async ({inward_issue, outward_issue, link_type}) => {
-      try {
-        await jiraRequest("POST", "/issueLink", {
-          inwardIssue: {key: inward_issue},
-          outwardIssue: {key: outward_issue},
-          type: {name: link_type},
-        });
-        return {
-          content: [
-            {
-              text: `Linked: ${inward_issue} "${link_type}" ${outward_issue}`,
-              type: "text",
-            },
-          ],
-        };
-      } catch (err) {
-        return {content: [{text: err.message, type: "text"}], isError: true};
-      }
+    async ({inward_issue, outward_issue, link_type}, jira) => {
+      await jira("POST", "/issueLink", {
+        inwardIssue: {key: inward_issue},
+        outwardIssue: {key: outward_issue},
+        type: {name: link_type},
+      });
+      return `Linked: ${inward_issue} "${link_type}" ${outward_issue}`;
     },
+    jiraRequest,
   );
 };
