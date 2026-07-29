@@ -9,6 +9,10 @@ export const registerCreateTicket = (server, jiraRequest) => {
     {
       description: "Create a new Jira ticket (Story, Task, Bug, Sub-task)",
       inputSchema: z.object({
+        assignee: z
+          .string()
+          .optional()
+          .describe("Assignee username, e.g. username"),
         body: z.string().optional().describe("Description text"),
         due_date: z.string().optional().describe("Due date YYYY-MM-DD"),
         issue_type: z
@@ -39,6 +43,7 @@ export const registerCreateTicket = (server, jiraRequest) => {
         start_date,
         original_estimate,
         labels,
+        assignee,
       },
       jira,
     ) => {
@@ -53,6 +58,7 @@ export const registerCreateTicket = (server, jiraRequest) => {
       if (due_date) fields.duedate = due_date;
       if (start_date) fields[START_DATE_FIELD] = start_date;
       if (labels?.length) fields.labels = labels;
+      if (assignee) fields.assignee = {name: assignee};
       if (original_estimate) {
         fields.timetracking = {originalEstimate: original_estimate};
       }

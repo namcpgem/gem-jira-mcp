@@ -1,5 +1,6 @@
 import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
+import pkg from "../package.json" with {type: "json"};
 import {registerAddComment} from "./tools/add-comment.js";
 import {registerCreateTicket} from "./tools/create-ticket.js";
 import {registerGenerateReleaseNotes} from "./tools/generate-release-notes.js";
@@ -10,7 +11,7 @@ import {registerSearchTickets} from "./tools/search-tickets.js";
 import {registerTransitionTicket} from "./tools/transition-ticket.js";
 import {registerUpdateTicket} from "./tools/update-ticket.js";
 
-const server = new McpServer({name: "jira-mcp", version: "1.0.0"});
+const server = new McpServer({name: "jira-mcp", version: pkg.version});
 
 registerGetTicket(server);
 registerTransitionTicket(server);
