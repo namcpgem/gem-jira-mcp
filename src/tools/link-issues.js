@@ -6,8 +6,7 @@ export const registerLinkIssues = (server, jiraRequest) => {
     server,
     "link_issues",
     {
-      description:
-        "Create a link between two Jira tickets (e.g. Blocks, Relates to, Clones, Duplicate)",
+      description: "Create a link between two Jira tickets",
       inputSchema: z.object({
         inward_issue: z
           .string()

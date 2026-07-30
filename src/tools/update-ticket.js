@@ -26,8 +26,8 @@ export const registerUpdateTicket = (server, jiraRequest) => {
     "update_ticket",
     {
       description:
-        "Update fields of a Jira ticket: summary, description, issue type, parent, labels, due date, start date, original estimate, implementation notes, assignee, priority. " +
-        'Note: converting between a standard issue type and Sub-task is a Jira REST API limitation and is not supported here — use Jira\'s UI "Move" action instead.',
+        "Update fields of a Jira ticket. Converting between a standard issue " +
+        'type and Sub-task is a Jira REST API limitation — use Jira\'s UI "Move" action instead.',
       inputSchema: z.object({
         assignee: z
           .string()

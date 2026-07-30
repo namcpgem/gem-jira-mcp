@@ -7,7 +7,7 @@ export const registerCreateTicket = (server, jiraRequest) => {
     server,
     "create_ticket",
     {
-      description: "Create a new Jira ticket (Story, Task, Bug, Sub-task)",
+      description: "Create a new Jira ticket",
       inputSchema: z.object({
         assignee: z
           .string()

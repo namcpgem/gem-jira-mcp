@@ -36,6 +36,16 @@ export const ACTIVITIES = {
   review: 9,
 };
 
+// One alias per distinct id. Tool descriptions ship on every LLM request, so
+// they advertise these instead of every synonym; all aliases stay accepted.
+export const canonicalNames = (map) => {
+  const byId = new Map();
+  for (const [name, id] of Object.entries(map)) {
+    if (!byId.has(id)) byId.set(id, name);
+  }
+  return [...byId.values()].join(", ");
+};
+
 // WorklogPRO interprets the start time in the Jira server's timezone.
 const WORKLOG_TZ = process.env.JIRA_TIMEZONE || "Asia/Ho_Chi_Minh";
 

@@ -1,6 +1,11 @@
 import {z} from "zod";
 import {defineTool} from "../define-tool.js";
-import {ACTIVITIES, logWorkPro, WORK_TYPES} from "../worklog-pro.js";
+import {
+  ACTIVITIES,
+  canonicalNames,
+  logWorkPro,
+  WORK_TYPES,
+} from "../worklog-pro.js";
 
 export const registerLogWork = (server) => {
   defineTool(
@@ -14,15 +19,13 @@ export const registerLogWork = (server) => {
           .string()
           .optional()
           .describe(
-            `Type of Activity (required when work_type is set): ${Object.keys(ACTIVITIES).join(", ")}`,
+            `Type of Activity (required when work_type is set): ${canonicalNames(ACTIVITIES)}`,
           ),
         comment: z.string().optional().describe("Optional work log comment"),
         started: z
           .string()
           .optional()
-          .describe(
-            "Start datetime ISO format, e.g. '2026-06-29T09:00:00.000+0700'. Defaults to now.",
-          ),
+          .describe("Start datetime ISO, e.g. '2026-06-29T09:00:00.000+0700'"),
         ticket_id: z.string().describe("Jira issue key, e.g. GEM-234"),
         time_spent: z
           .string()
@@ -30,7 +33,7 @@ export const registerLogWork = (server) => {
         work_type: z
           .string()
           .optional()
-          .describe(`Type of Work: ${Object.keys(WORK_TYPES).join(", ")}`),
+          .describe(`Type of Work: ${canonicalNames(WORK_TYPES)}`),
       }),
     },
     async ({ticket_id, time_spent, comment, started, work_type, activity}) => {
