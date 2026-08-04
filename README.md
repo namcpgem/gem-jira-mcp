@@ -12,7 +12,7 @@ MCP server for Jira Server/Data Center (REST API v2). Lets an AI assistant (Clau
 Use Claude Code CLI:
 
 ```bash
-claude mcp add jira-mcp npx -y g-jira-mcp@latest \
+claude mcp add g-jira-mcp npx -y g-jira-mcp@latest \
   --env JIRA_HOST="https://jira.company.com" \
   --env JIRA_USERNAME="your_username" \
   --env JIRA_PASSWORD="your_password"
@@ -23,7 +23,7 @@ Or manually add to `.claude/settings.json` (or `claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "jira-mcp": {
+    "g-jira-mcp": {
       "command": "npx",
       "args": ["-y", "g-jira-mcp@latest"],
       "env": {
@@ -62,7 +62,7 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 | `search_tickets`         | Search Jira tickets using JQL query language                                                      | `jql`, `max_results` (optional, default 25)                                                                                                                                          |
 | `create_ticket`          | Create a new Jira ticket                                                                          | `project`, `summary`, `issue_type`, optional: `assignee`, `body`, `parent_key`, `due_date`, `start_date`, `original_estimate`, `labels`                                              |
 | `update_ticket`          | Update fields of a Jira ticket                                                                    | `ticket_id`, optional: `summary`, `description`, `issue_type`, `parent_key`, `labels`, `due_date`, `start_date`, `original_estimate`, `implementation_notes`, `assignee`, `priority` |
-| `transition_ticket`      | Change the status of a Jira ticket by status name                                                 | `ticket_id`, `status`                                                                                                                                                                |
+| `transition_ticket`      | Change a Jira ticket's status by name, alias-aware                                                | `ticket_id`, `status`                                                                                                                                                                |
 | `add_comment`            | Add a comment to a Jira ticket                                                                    | `ticket_id`, `body`                                                                                                                                                                  |
 | `log_work`               | Log work (time) on a Jira ticket, optionally setting WorklogPRO Type of Work and Type of Activity | `ticket_id`, `time_spent`, optional: `comment`, `started`, `work_type`, `activity`                                                                                                   |
 | `link_issues`            | Create a link between two Jira tickets                                                            | `inward_issue`, `outward_issue`, optional: `link_type` (default "Blocks")                                                                                                            |
@@ -74,12 +74,15 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 - `get_ticket` omits unset fields rather than printing placeholder text. Key, Summary, Status and Assignee are always present (Assignee shows "Unassigned" when empty); other fields appear only when set. Pass `include_comments=true` to append the ticket's comment thread; comments are off by default to keep output small and save tokens. The same Jira request fetches everything, so including comments costs no extra API call. Comments are capped at 20 most recent; if a ticket has more, the header reads `Comments (20 most recent of 45):` so the caller knows older comments exist and can open the ticket in Jira to see them.
 - `search_tickets` output is adaptive: empty columns (no value anywhere) are dropped entirely, and constant columns (same value on every row, when there are 3+ rows) are stated once in the header as `All: Status=In Progress` and removed from the table. When columns are dropped, the header also notes which ones were empty across all results (e.g. `Unset for every row: Priority, Parent, Start Date`) so the caller can tell "no ticket has a due date" from "this tool doesn't return due dates". KEY and Summary are always kept. This keeps results focused and token-efficient. The header's `Found N issue(s) (showing M)` reports when the result was truncated — raise `max_results` above the default 25 to see more.
 - `create_ticket` and `update_ticket` both accept an `assignee` parameter (Jira username as a string, sent as `{name: assignee}`). In `create_ticket`, an empty assignee value is ignored. In `update_ticket`, pass `assignee=""` to unassign.
+- `create_ticket` applies `original_estimate` in a follow-up PUT rather than in the create payload: Jira Data Center answers a bare `500 Internal server error` when `timetracking` is present in `POST /issue`, while the same value applies cleanly as an update afterwards. The ticket key is reported even if that second call fails, with a warning to set the estimate via `update_ticket` — so a failed estimate never sends you back to create a duplicate.
 - `duedate` is a standard field (`YYYY-MM-DD`); "Start date" is a custom field, configurable via `JIRA_START_DATE_FIELD`.
 - `search_tickets` uses JQL syntax, e.g. `project = GEM AND status = 'In Progress'`.
-- `transition_ticket` matches the target status by name and resolves the transition ID automatically.
+- `transition_ticket` resolves the transition ID automatically, matching either the transition's own name ("Resolve Issue") or the status it lands on ("Done"). Common aliases map onto whatever the workflow actually offers (Closed/Resolved/Complete → Done, Reopen → Re-Open, Todo → To Do, Cancelled → Won't Do), so the same call works across workflows with different status names. Exact matches win, then aliases, then a substring fallback. When nothing matches, the error lists every valid option for that issue as `Transition -> Target Status`; the tool description cannot list them because they vary per issue and workflow.
 - `update_ticket` only changes the fields you pass; omit a field to keep its current value. Pass `assignee=""` to unassign. `implementation_notes` appends to the description. Converting a standard issue type (Story, Task, Bug) to Sub-task or vice versa is a Jira REST API limitation — use the Jira UI "Move" action instead.
 - `log_work` advertises one canonical name per work type (code, deploy, design, fix, management, meeting, misc, operation, qa, req, research, translation) and per activity (correct, create, review) so its schema stays small; every alias still works as input (coding, dev, testing, ops, requirement, other, and the rest). `activity` is required when `work_type` is set. If neither is set, logs via plain REST (no WorklogPRO form). Start times are interpreted in the Jira server timezone (configurable via `JIRA_TIMEZONE`).
 - `generate_release_notes` groups tickets by type into Features / Improvements / Bug Fixes / Other.
+- Register the server as `g-jira-mcp` and use that key in every project. The key becomes the tool prefix (`mcp__g-jira-mcp__get_ticket`), so a project that registers it under a different name exposes different tool names — an agent carrying the habit of one name into a project configured with the other gets `No such tool available`.
+- Transient Jira failures (429, 500, 502, 503, 504) are retried up to twice with a 250ms/500ms backoff. Only GET, PUT and DELETE are replayed — a POST that returned 500 may already have created the comment, worklog or transition, so it fails fast instead of risking a duplicate.
 - All logs go to stderr; stdout is reserved for the MCP protocol.
 
 ## Example prompts

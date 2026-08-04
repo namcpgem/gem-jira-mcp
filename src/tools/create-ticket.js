@@ -59,12 +59,26 @@ export const registerCreateTicket = (server, jiraRequest) => {
       if (start_date) fields[START_DATE_FIELD] = start_date;
       if (labels?.length) fields.labels = labels;
       if (assignee) fields.assignee = {name: assignee};
-      if (original_estimate) {
-        fields.timetracking = {originalEstimate: original_estimate};
-      }
 
       const result = await jira("POST", "/issue", {fields});
       const url = `${process.env.JIRA_HOST}/browse/${result.key}`;
+
+      // timetracking in the create payload makes Jira Data Center answer a bare
+      // 500 ({"errorMessages":["Internal server error"]}), so the estimate goes
+      // on afterwards through the same update.timetracking.edit path
+      // update_ticket uses. The key is reported either way: losing it on a
+      // failed estimate would send the caller back to create a duplicate.
+      if (original_estimate) {
+        try {
+          await jira("PUT", `/issue/${result.key}`, {
+            update: {
+              timetracking: [{edit: {originalEstimate: original_estimate}}],
+            },
+          });
+        } catch (err) {
+          return `Created ${result.key}: ${url}\nWarning: original_estimate "${original_estimate}" was not applied (${err.message}). The ticket exists — set the estimate with update_ticket.`;
+        }
+      }
       return `Created ${result.key}: ${url}`;
     },
     jiraRequest,
