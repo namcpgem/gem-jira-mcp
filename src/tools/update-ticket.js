@@ -1,6 +1,6 @@
 import {z} from "zod";
 import {defineTool} from "../define-tool.js";
-import {START_DATE_FIELD} from "../ticket-fields.js";
+import {EPIC_LINK_FIELD, START_DATE_FIELD} from "../ticket-fields.js";
 
 // Jira's REST API silently ignores certain field writes (issue-type/Sub-task
 // conversions in particular) instead of rejecting the request, so callers
@@ -35,6 +35,13 @@ export const registerUpdateTicket = (server, jiraRequest) => {
           .describe("Username to assign, or empty string to unassign"),
         description: z.string().optional().describe("Replace full description"),
         due_date: z.string().optional().describe("Due date YYYY-MM-DD"),
+        epic_key: z
+          .string()
+          .optional()
+          .describe(
+            "Epic ticket key to set as this issue's Epic Link (shows under " +
+              'the Epic\'s "Issues in Epic" panel, not Linked Issues)',
+          ),
         implementation_notes: z
           .string()
           .optional()
@@ -69,6 +76,7 @@ export const registerUpdateTicket = (server, jiraRequest) => {
         implementation_notes,
         issue_type,
         parent_key,
+        epic_key,
         labels,
         due_date,
         start_date,
@@ -101,6 +109,7 @@ export const registerUpdateTicket = (server, jiraRequest) => {
       if (issue_type !== undefined) fields.issuetype = {name: issue_type};
       if (priority !== undefined) fields.priority = {name: priority};
       if (parent_key !== undefined) fields.parent = {key: parent_key};
+      if (epic_key !== undefined) fields[EPIC_LINK_FIELD] = epic_key;
       if (labels !== undefined) fields.labels = labels;
       if (due_date !== undefined) fields.duedate = due_date;
       if (start_date !== undefined) fields[START_DATE_FIELD] = start_date;
@@ -137,6 +146,17 @@ export const registerUpdateTicket = (server, jiraRequest) => {
           hint: 'Jira\'s REST API silently rejects conversions between standard issue types and Sub-task. Use the "Move" action in the Jira UI instead, or create a new Sub-task and migrate the content.',
           label: "issue type",
           readActual: (f) => f.issuetype.name,
+        });
+      }
+
+      if (epic_key !== undefined) {
+        await verifyFieldApplied(jira, ticket_id, {
+          expected: epic_key,
+          field: EPIC_LINK_FIELD,
+          hint: "Epic Link can only be set on standard issue types (Story/Task/Bug), not on Sub-tasks or Epics themselves.",
+          label: "Epic Link",
+          noneText: "no epic",
+          readActual: (f) => f[EPIC_LINK_FIELD],
         });
       }
 
