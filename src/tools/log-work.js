@@ -37,30 +37,15 @@ export const registerLogWork = (server) => {
       }),
     },
     async ({ticket_id, time_spent, comment, started, work_type, activity}) => {
-      const opts = {comment, started};
-      if (work_type) {
-        const id = WORK_TYPES[work_type.toLowerCase()];
-        if (id == null) {
-          throw new Error(
-            `Unknown work_type "${work_type}". Valid: ${Object.keys(WORK_TYPES).join(", ")}`,
-          );
-        }
-        opts.workType = id;
-      }
-      if (activity) {
-        const id = ACTIVITIES[activity.toLowerCase()];
-        if (id == null) {
-          throw new Error(
-            `Unknown activity "${activity}". Valid: ${Object.keys(ACTIVITIES).join(", ")}`,
-          );
-        }
-        opts.activity = id;
-      }
-      const result = await logWorkPro(ticket_id, time_spent, opts);
-      const idNote = result?.id ? ` (worklog id: ${result.id})` : "";
-      const attrNote = work_type
-        ? ` [${work_type}${activity ? `/${activity}` : ""}]`
-        : "";
+      const {id} = await logWorkPro(ticket_id, time_spent, {
+        activity,
+        comment,
+        started,
+        workType: work_type,
+      });
+      const attrs = [work_type, activity].filter(Boolean).join("/");
+      const attrNote = attrs ? ` [${attrs}]` : "";
+      const idNote = id ? ` (worklog id: ${id})` : "";
       return `Logged ${time_spent} on ${ticket_id}${attrNote}${idNote}`;
     },
   );

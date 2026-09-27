@@ -46,6 +46,19 @@ export const canonicalNames = (map) => {
   return [...byId.values()].join(", ");
 };
 
+// Resolved here, before any request, so an unknown alias fails with nothing
+// posted and the tool never has to know the id tables.
+const resolveAlias = (map, name, label) => {
+  if (!name) return null;
+  const id = map[name.toLowerCase()];
+  if (id == null) {
+    throw new Error(
+      `Unknown ${label} "${name}". Valid: ${Object.keys(map).join(", ")}`,
+    );
+  }
+  return id;
+};
+
 // WorklogPRO interprets the start time in the Jira server's timezone.
 const WORKLOG_TZ = process.env.JIRA_TIMEZONE || "Asia/Ho_Chi_Minh";
 
@@ -86,23 +99,28 @@ const worklogDates = (iso) => {
   };
 };
 
-const restLogWork = (ticketId, timeSpent, {comment, started}) => {
+const restLogWork = async (ticketId, timeSpent, {comment, started}) => {
   const body = {timeSpent};
   if (started) body.started = started;
   if (comment) body.comment = comment;
-  return jiraRequest("POST", `/issue/${ticketId}/worklog`, body);
+  const worklog = await jiraRequest("POST", `/issue/${ticketId}/worklog`, body);
+  return {id: worklog?.id};
 };
 
 // Log work through the WorklogPRO web form so Type of Work (wa_1) and Type of
-// Activity (wa_2) get set — the REST worklog API cannot set them. Falls back to
-// plain REST logging if the form is unavailable.
+// Activity (wa_2) get set — the REST worklog API cannot set them. No REST
+// fallback once attributes are asked for: a worklog without them has to be
+// fixed by hand in the Jira UI, while a failure before posting is safe to retry.
 /**
  * @param {string} ticketId
  * @param {string} timeSpent
- * @param {{activity?: number|null, comment?: string, started?: string, workType?: number|null}} [opts]
+ * @param {{activity?: string, comment?: string, started?: string, workType?: string}} [opts] aliases, e.g. workType "dev", activity "review"
+ * @returns {Promise<{id?: string}>} id only on the REST path; the form returns none
  */
 export const logWorkPro = async (ticketId, timeSpent, opts = {}) => {
-  const {activity, comment, started, workType} = opts;
+  const {comment, started} = opts;
+  const workType = resolveAlias(WORK_TYPES, opts.workType, "work_type");
+  const activity = resolveAlias(ACTIVITIES, opts.activity, "activity");
   // No attributes requested → plain REST worklog. The WorklogPRO form mandates
   // Type of Activity, so routing an attribute-less log through it would fail.
   if (workType == null && activity == null) {
@@ -113,7 +131,9 @@ export const logWorkPro = async (ticketId, timeSpent, opts = {}) => {
     {headers: {Accept: "text/html,*/*", Authorization: AUTH_HEADER}},
   );
   if (!formRes.ok) {
-    return restLogWork(ticketId, timeSpent, {comment, started});
+    throw new Error(
+      `WorklogPRO form unavailable (HTTP ${formRes.status}); nothing was logged, safe to retry`,
+    );
   }
   // The atl_token must match the session's atlassian.xsrf.token cookie; Basic
   // Auth makes a fresh session per request, so the POST has to reuse the cookies
@@ -159,8 +179,12 @@ export const logWorkPro = async (ticketId, timeSpent, opts = {}) => {
       method: "POST",
     },
   );
+  // No REST fallback here: a failed POST may still have created the worklog,
+  // and replaying it would log the time twice (same rule as jiraRequest).
   if (!postRes.ok) {
-    return restLogWork(ticketId, timeSpent, {comment, started});
+    throw new Error(
+      `WorklogPRO: submit failed (HTTP ${postRes.status}); do not retry, the worklog may already exist: ask the user to check the Work Log tab of ${ticketId} in Jira`,
+    );
   }
   const body = await postRes.text();
   if (body.includes("XSRF Security Token Missing")) {
@@ -176,5 +200,5 @@ export const logWorkPro = async (ticketId, timeSpent, opts = {}) => {
         : "WorklogPRO: submission failed",
     );
   }
-  return null;
+  return {};
 };
