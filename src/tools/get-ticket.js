@@ -16,18 +16,22 @@ const IMAGE_TYPES = new Set([
 // are resent on every later turn. So budget base64 bytes, well under those.
 // No resizing: the API downscales oversized images itself, which already
 // caps their token cost.
+// The caller can raise the count up to IMAGE_LIMIT_MAX; the byte budget
+// below still applies, so more images never means a bigger request. Max 20:
+// past 20 images in one request Claude applies a stricter per-image limit.
 const IMAGE_LIMIT = 5;
+const IMAGE_LIMIT_MAX = 20;
 const IMAGE_MAX_B64 = 5_000_000;
 const IMAGES_TOTAL_B64 = 10_000_000;
 const b64Size = (bytes) => Math.ceil(bytes / 3) * 4;
 
-const fetchImages = async (attachments, download) => {
+const fetchImages = async (attachments, download, limit) => {
   const images = attachments.filter((a) => IMAGE_TYPES.has(a.mimeType));
   const picked = [];
   let budget = IMAGES_TOTAL_B64;
   for (const a of images) {
     const size = b64Size(a.size);
-    if (picked.length === IMAGE_LIMIT) break;
+    if (picked.length === limit) break;
     if (size > IMAGE_MAX_B64 || size > budget) continue;
     picked.push(a);
     budget -= size;
@@ -47,7 +51,7 @@ const fetchImages = async (attachments, download) => {
   const skipped = images.length - picked.length;
   if (skipped)
     notes.push(
-      `  ${skipped} more image(s) not shown (max 5 images, ~3.7 MB each, ~7.5 MB total)`,
+      `  ${skipped} more image(s) not shown (max ${limit} images, ~3.7 MB each, ~7.5 MB total)`,
     );
   return {blocks, notes};
 };
@@ -84,6 +88,15 @@ export const registerGetTicket = (
     {
       description: "Get full details of a Jira ticket by its key",
       inputSchema: z.object({
+        image_limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(IMAGE_LIMIT_MAX)
+          .optional()
+          .describe(
+            `Max images to return with include_images (default ${IMAGE_LIMIT}, max ${IMAGE_LIMIT_MAX}); the total size cap still applies`,
+          ),
         include_comments: z
           .boolean()
           .optional()
@@ -97,7 +110,10 @@ export const registerGetTicket = (
         ticket_id: z.string().describe("Jira issue key, e.g. GEM-234"),
       }),
     },
-    async ({ticket_id, include_comments, include_images}, jira) => {
+    async (
+      {ticket_id, include_comments, include_images, image_limit},
+      jira,
+    ) => {
       const issue = await jira("GET", `/issue/${ticket_id}`);
       const f = issue.fields;
       const subtasks = (f.subtasks || [])
@@ -108,7 +124,7 @@ export const registerGetTicket = (
       const line = (label, value) => (value ? `${label}: ${value}` : null);
       const attachments = f.attachment || [];
       const images = include_images
-        ? await fetchImages(attachments, download)
+        ? await fetchImages(attachments, download, image_limit ?? IMAGE_LIMIT)
         : {blocks: [], notes: []};
       const text = [
         `Key: ${issue.key}`,

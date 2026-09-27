@@ -187,3 +187,37 @@ test("get_ticket keeps returned images within a base64 byte budget", async () =>
   assert.equal(content.length, 3);
   assert.match(content[0].text, /1 more image\(s\) not shown/);
 });
+
+test("get_ticket returns up to image_limit images, default 5", async () => {
+  const server = fakeServer();
+  const attachment = [1, 2, 3, 4, 5, 6, 7].map((n) => ({
+    content: `u${n}`,
+    filename: `${n}.png`,
+    mimeType: "image/png",
+    size: 10,
+  }));
+  registerGetTicket(
+    server,
+    async () => ({
+      fields: {attachment, status: {}, summary: "Many"},
+      key: "GEM-7",
+    }),
+    async () => "B64",
+  );
+  const call = server.tools.get("get_ticket");
+
+  const byDefault = await call({include_images: true, ticket_id: "GEM-7"});
+  assert.equal(byDefault.content.length, 6);
+  assert.match(
+    byDefault.content[0].text,
+    /2 more image\(s\) not shown \(max 5/,
+  );
+
+  const raised = await call({
+    image_limit: 7,
+    include_images: true,
+    ticket_id: "GEM-7",
+  });
+  assert.equal(raised.content.length, 8);
+  assert.doesNotMatch(raised.content[0].text, /not shown/);
+});
