@@ -9,6 +9,7 @@ import {registerLinkIssues} from "./tools/link-issues.js";
 import {registerLogWork} from "./tools/log-work.js";
 import {registerSearchTickets} from "./tools/search-tickets.js";
 import {registerTransitionTicket} from "./tools/transition-ticket.js";
+import {registerUnlinkIssues} from "./tools/unlink-issues.js";
 import {registerUpdateTicket} from "./tools/update-ticket.js";
 
 const server = new McpServer({name: "jira-mcp", version: pkg.version});
@@ -21,6 +22,7 @@ registerSearchTickets(server);
 registerCreateTicket(server);
 registerGenerateReleaseNotes(server);
 registerLinkIssues(server);
+registerUnlinkIssues(server);
 registerLogWork(server);
 
 const transport = new StdioServerTransport();
