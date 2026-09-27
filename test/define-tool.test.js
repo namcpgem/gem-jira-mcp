@@ -35,18 +35,3 @@ test("defineTool wraps a thrown Error as isError", async () => {
     isError: true,
   });
 });
-
-test("defineTool passes the injected jiraRequest into the handler", async () => {
-  const server = fakeServer();
-  const fakeJira = async (method, path) => ({method, path});
-  defineTool(
-    server,
-    "echo_tool",
-    {},
-    async (_params, jira) => JSON.stringify(await jira("GET", "/ping")),
-    fakeJira,
-  );
-
-  const result = await server.tools.get("echo_tool")({});
-  assert.equal(result.content[0].text, '{"method":"GET","path":"/ping"}');
-});

@@ -8,10 +8,13 @@ const FORM_HTML =
   '<input name="startDate" value="2026-09-27 09:00"></form>';
 
 // Routes the three requests a worklog can make (form GET, form POST, REST
-// POST) to scripted statuses and records which of them were sent.
+// POST) to scripted statuses and records which of them were sent, plus the
+// form fields the last submit posted.
+let submitted;
 const stubJira = ({form = 200, submit = 200} = {}) => {
   const calls = [];
-  globalThis.fetch = async (url) => {
+  submitted = null;
+  globalThis.fetch = async (url, init = {}) => {
     const kind = url.includes("!default.jspa")
       ? "form"
       : url.includes("WorkLogAction.jspa")
@@ -20,6 +23,7 @@ const stubJira = ({form = 200, submit = 200} = {}) => {
           ? "rest"
           : "other";
     calls.push(kind);
+    if (kind === "submit") submitted = new URLSearchParams(init.body);
     const status = {form, rest: 201, submit}[kind] ?? 404;
     return {
       headers: {getSetCookie: () => ["JSESSIONID=abc; Path=/"]},
@@ -49,6 +53,9 @@ test("log_work sets attributes through the WorklogPRO form", async () => {
   });
   assert.equal(isError, undefined);
   assert.deepEqual(calls, ["form", "submit"]);
+  // dev -> Type of Work 3, review -> Type of Activity 9 (WorklogPRO ids).
+  assert.equal(submitted.get("wa_1"), "3");
+  assert.equal(submitted.get("wa_2"), "9");
   assert.equal(content[0].text, "Logged 2h on GEM-1 [dev/review]");
 });
 
