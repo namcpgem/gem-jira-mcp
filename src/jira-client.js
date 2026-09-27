@@ -42,8 +42,10 @@ export const jiraRequest = async (method, path, body, attempt = 0) => {
     const text = await res.text();
     throw new Error(`Jira API ${res.status}: ${text}`);
   }
-  if (res.status === 204) return null;
-  return res.json();
+  // Not just 204: POST /issueLink answers 201 with an empty body, and parsing
+  // that would report a link that was created as a failure.
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 };
 
 // Attachment content is binary and lives at an absolute URL outside

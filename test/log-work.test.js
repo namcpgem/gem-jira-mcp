@@ -23,10 +23,9 @@ const stubJira = ({form = 200, submit = 200} = {}) => {
     const status = {form, rest: 201, submit}[kind] ?? 404;
     return {
       headers: {getSetCookie: () => ["JSESSIONID=abc; Path=/"]},
-      json: async () => ({id: "777"}),
       ok: status < 400,
       status,
-      text: async () => (kind === "form" ? FORM_HTML : "ok"),
+      text: async () => ({form: FORM_HTML, rest: '{"id":"777"}'})[kind] ?? "ok",
     };
   };
   return calls;

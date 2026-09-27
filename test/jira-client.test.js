@@ -4,16 +4,15 @@ import {jiraRequest} from "../src/jira-client.js";
 
 // Replaces global fetch with a scripted sequence of statuses and records how
 // many times it was actually called.
-const stubFetch = (statuses) => {
+const stubFetch = (statuses, okBody = '{"ok":true}') => {
   const calls = [];
   globalThis.fetch = async () => {
     const status = statuses[calls.length] ?? 200;
     calls.push(status);
     return {
-      json: async () => ({ok: true}),
       ok: status < 400,
       status,
-      text: async () => "server exploded",
+      text: async () => (status < 400 ? okBody : "server exploded"),
     };
   };
   return calls;
@@ -50,4 +49,12 @@ test("jiraRequest does not replay a POST", async () => {
     /Jira API 500/,
   );
   assert.equal(calls.length, 1);
+});
+
+test("jiraRequest returns null for a 201 with an empty body", async () => {
+  stubFetch([201], "");
+  assert.equal(
+    await jiraRequest("POST", "/issueLink", {type: {name: "Blocks"}}),
+    null,
+  );
 });
