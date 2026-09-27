@@ -1,6 +1,8 @@
 import {z} from "zod";
 import {defineTool} from "../define-tool.js";
 
+const NOT_SHIPPED = /cancel|reject|duplicat|won't/i;
+
 export const registerGenerateReleaseNotes = (server, jiraRequest) => {
   defineTool(
     server,
@@ -17,23 +19,31 @@ export const registerGenerateReleaseNotes = (server, jiraRequest) => {
       }),
     },
     async ({fix_version, project}, jira) => {
-      let jql = `fixVersion = "${fix_version}" AND status in (Done, Fixed, Resolved, Closed)`;
+      // Status names differ per workflow, and JQL rejects the whole query (400)
+      // if one named status does not exist, so match the category instead.
+      let jql = `fixVersion = "${fix_version}" AND statusCategory = Done`;
       if (project) jql += ` AND project = ${project}`;
       jql += " ORDER BY issuetype ASC";
 
       const params = new URLSearchParams({
-        fields: "summary,issuetype,key",
+        fields: "summary,issuetype,status",
         jql,
         maxResults: "200",
       });
       const data = await jira("GET", `/search?${params}`);
+      // The Done category also holds work that never shipped. Filtered here,
+      // not in JQL, for the same reason as above.
+      // ponytail: name heuristic; list excluded statuses in config if it misses
+      const issues = (data.issues || []).filter(
+        (i) => !NOT_SHIPPED.test(i.fields.status?.name || ""),
+      );
 
-      if (!data.issues?.length) {
+      if (!issues.length) {
         return `No resolved issues found for version "${fix_version}"`;
       }
 
       const groups = {Bug: [], Other: [], Story: [], Task: []};
-      for (const issue of data.issues) {
+      for (const issue of issues) {
         const type = issue.fields.issuetype?.name || "Other";
         if (type === "Story") groups.Story.push(issue);
         else if (type === "Task" || type === "Sub-task")
