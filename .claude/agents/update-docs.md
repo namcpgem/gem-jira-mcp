@@ -15,7 +15,7 @@ Always sync every file: README.md plus every `*.md` under docs/ (glob it — do 
 - src/index.js — which tools are registered (completeness + order)
 - src/jira-client.js — REST API base path, auth scheme, and which env vars are read
 - package.json — `version`, `bin` name, dependencies, scripts
-- scripts/build.js, scripts/archive.js — build/archive (zip release) flow
+- rsbuild.config.mjs — build flow
 - .env.example — required and optional env variables (JIRA_HOST, JIRA_USERNAME, JIRA_PASSWORD, JIRA_START_DATE_FIELD)
 
 ## Files to update
@@ -24,7 +24,7 @@ Glob `docs/*.md` and always include README.md. Update every file found. Known fi
 
 - README.md — English. Keep sections: Quick start, Environment variables, Tools table, Notes, Example prompts, Troubleshooting, Development.
 - docs/USAGE.md — Vietnamese mirror of README (install, env table, tools table, notes, examples, troubleshooting).
-- docs/RELEASE.md — Vietnamese release guide; keep aligned with scripts/ and the pre-release checklist.
+- docs/RELEASE.md — Vietnamese release guide; keep aligned with rsbuild.config.mjs, .release-it.json and the pre-release checklist.
 
 ## Steps
 

@@ -109,3 +109,81 @@ test("get_ticket caps a long comment thread and says it capped it", async () => 
   assert.match(text, /comment 26/);
   assert.doesNotMatch(text, /comment 25\b/);
 });
+
+test("get_ticket returns image attachments as image blocks on request", async () => {
+  const server = fakeServer();
+  const attachment = [
+    {content: "u1", filename: "shot.png", mimeType: "image/png", size: 10},
+    {
+      content: "u2",
+      filename: "spec.pdf",
+      mimeType: "application/pdf",
+      size: 10,
+    },
+    {content: "u3", filename: "huge.png", mimeType: "image/png", size: 9e6},
+    {content: "u4", filename: "gone.jpg", mimeType: "image/jpeg", size: 10},
+  ];
+  const downloads = [];
+  const download = async (url) => {
+    downloads.push(url);
+    if (url === "u4") throw new Error("Jira attachment 404");
+    return "BASE64";
+  };
+  registerGetTicket(
+    server,
+    async () => ({
+      fields: {attachment, status: {}, summary: "Has shots"},
+      key: "GEM-5",
+    }),
+    download,
+  );
+  const call = server.tools.get("get_ticket");
+
+  const plain = await call({ticket_id: "GEM-5"});
+  assert.equal(plain.content.length, 1);
+  assert.match(plain.content[0].text, /Attachments: shot.png, spec.pdf/);
+  assert.equal(downloads.length, 0);
+
+  const {content} = await call({include_images: true, ticket_id: "GEM-5"});
+  assert.deepEqual(downloads, ["u1", "u4"]);
+  assert.deepEqual(content.slice(1), [
+    {data: "BASE64", mimeType: "image/png", type: "image"},
+  ]);
+  assert.match(content[0].text, /\[image 1\] shot.png/);
+  assert.match(
+    content[0].text,
+    /gone.jpg: download failed \(Jira attachment 404\)/,
+  );
+  assert.match(content[0].text, /1 more image\(s\) not shown/);
+});
+
+test("get_ticket keeps returned images within a base64 byte budget", async () => {
+  const server = fakeServer();
+  // 3.5 MB raw ≈ 4.67 MB base64: each fits alone, but only two fit the budget.
+  const attachment = ["a", "b", "c"].map((n) => ({
+    content: n,
+    filename: `${n}.png`,
+    mimeType: "image/png",
+    size: 3_500_000,
+  }));
+  const downloads = [];
+  registerGetTicket(
+    server,
+    async () => ({
+      fields: {attachment, status: {}, summary: "Big"},
+      key: "GEM-6",
+    }),
+    async (url) => {
+      downloads.push(url);
+      return "B64";
+    },
+  );
+
+  const {content} = await server.tools.get("get_ticket")({
+    include_images: true,
+    ticket_id: "GEM-6",
+  });
+  assert.deepEqual(downloads, ["a", "b"]);
+  assert.equal(content.length, 3);
+  assert.match(content[0].text, /1 more image\(s\) not shown/);
+});

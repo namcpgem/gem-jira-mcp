@@ -9,12 +9,29 @@ Jira mcp là MCP server cho phép AI assistant (Claude Code, Claude Desktop, ...
 
 ## Cách 1: Dùng Claude Code CLI (khuyến nghị)
 
+Chạy lệnh trong terminal thường, không chạy bên trong một phiên Claude Code. Chọn đúng block theo shell đang dùng, vì mỗi shell xuống dòng theo cách khác nhau.
+
+bash / zsh (macOS, Linux, Git Bash hoặc WSL trên Windows):
+
 ```bash
-claude mcp add g-jira-mcp npx -y g-jira-mcp@latest \
-  --env JIRA_HOST="https://jira.company.com" \
-  --env JIRA_USERNAME="your_username" \
-  --env JIRA_PASSWORD="your_password"
+claude mcp add g-jira-mcp \
+  -e JIRA_HOST="https://jira.company.com" \
+  -e JIRA_USERNAME="your_username" \
+  -e JIRA_PASSWORD="your_password" \
+  -- npx -y g-jira-mcp@latest
 ```
+
+PowerShell (Windows):
+
+```powershell
+claude mcp add g-jira-mcp `
+  -e JIRA_HOST="https://jira.company.com" `
+  -e JIRA_USERNAME="your_username" `
+  -e JIRA_PASSWORD="your_password" `
+  -- npx -y g-jira-mcp@latest
+```
+
+Command Prompt (cmd.exe): viết toàn bộ lệnh trên một dòng, hoặc kết thúc mỗi dòng bằng `^` thay cho `\`.
 
 ## Cách 2: Cấu hình thủ công
 
@@ -38,25 +55,6 @@ Thêm vào `.claude/settings.json` (hoặc `claude_desktop_config.json`):
 
 Khởi động lại Claude Code/Desktop sau khi sửa config.
 
-## Cách 3: Cài đặt từ file zip release
-
-1. Tải `jira-mcp-v<version>.zip` từ trang release.
-2. Giải nén vào một thư mục, ví dụ `C:\tools\jira-mcp`.
-3. Copy `.env.example` thành `.env` trong thư mục đó và điền thông tin Jira (hoặc khai báo env trực tiếp trong config MCP client).
-4. Không cần `npm install` — file `index.js` đã tự chứa toàn bộ dependencies.
-
-```json
-{
-  "mcpServers": {
-    "g-jira-mcp": {
-      "command": "node",
-      "args": ["/path/to/jira-mcp/index.js"],
-      "env": { "...": "..." }
-    }
-  }
-}
-```
-
 ## Cấu hình biến môi trường
 
 | Biến                    | Bắt buộc | Mô tả                                                                                    |
@@ -78,7 +76,7 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 
 | Tool                     | Chức năng                                                                                    | Tham số chính                                                                                                                                                                                    |
 | ------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `get_ticket`             | Lấy chi tiết đầy đủ của một ticket Jira theo key                                             | `ticket_id`, tùy chọn: `include_comments`                                                                                                                                                        |
+| `get_ticket`             | Lấy chi tiết đầy đủ của một ticket Jira theo key                                             | `ticket_id`, tùy chọn: `include_comments`, `include_images`                                                                                                                                      |
 | `search_tickets`         | Tìm kiếm ticket Jira bằng JQL                                                                | `jql`, `max_results` (tùy chọn, mặc định 25)                                                                                                                                                     |
 | `create_ticket`          | Tạo một ticket Jira mới                                                                      | `project`, `summary`, `issue_type`, tùy chọn: `assignee`, `body`, `parent_key`, `due_date`, `start_date`, `original_estimate`, `labels`                                                          |
 | `update_ticket`          | Cập nhật các field của ticket Jira                                                           | `ticket_id`, tùy chọn: `summary`, `description`, `issue_type`, `parent_key`, `epic_key`, `labels`, `due_date`, `start_date`, `original_estimate`, `implementation_notes`, `assignee`, `priority` |
@@ -92,6 +90,7 @@ curl -u user:pass https://jira.company.com/rest/api/2/field | jq '.[] | select(.
 
 - Jira Server dùng plain text cho description — không dùng định dạng ADF.
 - `get_ticket` bỏ qua các field không có giá trị thay vì in placeholder text. Key, Summary, Status và Assignee luôn hiện; các field khác chỉ xuất hiện khi có giá trị. Truyền `include_comments=true` để thêm thread comment của ticket vào output; comment tắt mặc định để giữ output nhỏ và tiết kiệm token. Cùng một request Jira fetch tất cả, nên include comments không tốn thêm API call. Comment được giới hạn 20 bình luận gần nhất; nếu ticket có nhiều hơn, header sẽ hiển thị `Comments (20 most recent of 45):` để người dùng biết rằng có bình luận cũ hơn và có thể mở ticket trong Jira để xem.
+- `get_ticket` liệt kê tên file đính kèm trong dòng `Attachments:` khi ticket có attachment. Truyền `include_images=true` để nhận thêm các ảnh đính kèm (PNG, JPEG, GIF, WebP) dưới dạng MCP image content, giúp người gọi xem được screenshot được tham chiếu dạng `!image.png!` trong description hoặc comment. Ảnh tắt mặc định vì mỗi ảnh tốn nhiều token hơn hẳn phần text. Tối đa 5 ảnh, mỗi ảnh khoảng 3.7 MB và tổng khoảng 7.5 MB, để response nằm trong giới hạn vision của Claude (5 MB base64 mỗi ảnh trên Bedrock và Google Cloud, 32 MB mỗi request). Ảnh được gửi nguyên bản; API của model tự thu nhỏ ảnh lớn. Mỗi ảnh tốn thêm một request tải về; phần `Images:` ánh xạ `[image N]` với tên file, báo ảnh tải lỗi và cho biết bao nhiêu ảnh bị bỏ qua.
 - `search_tickets` output thích ứng: các cột trống (không có giá trị ở bất kỳ hàng nào) bị bỏ hoàn toàn, các cột hằng số (cùng giá trị trên mọi hàng, khi có 3+ hàng) được nêu một lần trong header dạng `All: Status=In Progress` và bị xoá khỏi bảng. Khi bỏ các cột, header cũng ghi chú cột nào trống trên tất cả kết quả (ví dụ `Unset for every row: Priority, Parent, Start Date`) để người dùng phân biệt "không có ticket nào có due date" với "tool này không trả về due date". KEY và Summary luôn được giữ. Điều này giữ kết quả tập trung và tiết kiệm token. Header `Found N issue(s) (showing M)` cho biết khi kết quả bị cắt — tăng `max_results` lên trên mức mặc định 25 để xem thêm.
 - `create_ticket` và `update_ticket` đều chấp nhận tham số `assignee` (username Jira dưới dạng string, gửi dưới dạng `{name: assignee}`). Trong `create_ticket`, giá trị assignee trống sẽ bị bỏ qua. Trong `update_ticket`, truyền `assignee=""` để gỡ assignee.
 - `create_ticket` set `original_estimate` bằng một lệnh PUT ngay sau khi tạo, không gửi kèm trong payload tạo ticket: Jira Data Center trả về `500 Internal server error` trơ khi payload `POST /issue` có `timetracking`, nhưng cùng giá trị đó set qua update thì bình thường. Key của ticket vẫn được báo về ngay cả khi lệnh thứ hai lỗi, kèm cảnh báo set estimate qua `update_ticket` — nhờ vậy estimate lỗi không khiến bạn tạo lại ticket trùng.

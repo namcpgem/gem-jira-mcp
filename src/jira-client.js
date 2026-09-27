@@ -45,3 +45,11 @@ export const jiraRequest = async (method, path, body, attempt = 0) => {
   if (res.status === 204) return null;
   return res.json();
 };
+
+// Attachment content is binary and lives at an absolute URL outside
+// /rest/api/2, so it cannot go through jiraRequest. Returns base64.
+export const jiraDownload = async (url) => {
+  const res = await fetch(url, {headers: {Authorization: AUTH_HEADER}});
+  if (!res.ok) throw new Error(`Jira attachment ${res.status}`);
+  return Buffer.from(await res.arrayBuffer()).toString("base64");
+};

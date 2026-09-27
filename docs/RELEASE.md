@@ -24,21 +24,7 @@
 
    Không cần commit trước; release-it xử lý git operations. Chỉ cần run khi muốn release.
 
-2. Đóng gói zip release:
-
-   ```bash
-   pnpm archive
-   ```
-
-   Script này chạy tuần tự:
-   - `scripts/build.js` — bundle `src/index.js` bằng esbuild thành file duy nhất `dist/index.js` (kèm shebang `#!/usr/bin/env node`, không cần `node_modules` khi chạy).
-   - `scripts/archive.js` — đóng gói `release/jira-mcp-v<version>.zip` gồm:
-     - `index.js` (từ `dist/index.js`)
-     - `package.json`
-     - `README.md`
-     - `.env.example`
-
-3. Kiểm tra nhanh sau build:
+2. Kiểm tra nhanh sau build (`pnpm build` chạy rsbuild theo `rsbuild.config.mjs`, bundle `src/index.js` thành file duy nhất `dist/index.js`, kèm shebang `#!/usr/bin/env node`):
 
    ```bash
    node dist/index.js
@@ -57,10 +43,6 @@ npx github:namcpgem/gem-jira-mcp
 ```
 
 Khi cài từ git, npm tự chạy script `prepare` (cấu hình `"prepare": "npm run build"`) để build `dist/index.js`. release-it tự động push tag lên GitHub — chỉ cần đảm bảo repo ở chế độ public.
-
-### 2. Zip thủ công (release/jira-mcp-v<version>.zip)
-
-Sau khi chạy `pnpm release` xong, chạy `pnpm archive` để đóng gói zip cho người dùng không có git, xem [Hướng dẫn cài đặt](USAGE.md).
 
 Lưu ý: package chưa publish lên npm (tên `jira-mcp` đã bị chiếm bởi tài khoản khác). `.release-it.json` để `npm.publish: false`; phát hành qua GitHub + zip.
 
