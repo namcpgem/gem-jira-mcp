@@ -1,11 +1,11 @@
 import {z} from "zod";
-import {defineTool} from "../define-tool.js";
+import {defineTool} from "../../define-tool.js";
 import {
   ACTIVITIES,
   canonicalNames,
   logWorkPro,
   WORK_TYPES,
-} from "../worklog-pro.js";
+} from "./worklog-pro.js";
 
 export const registerLogWork = (server) => {
   defineTool(

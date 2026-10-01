@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {registerSearchTickets} from "../src/tools/search-tickets.js";
-import {fakeServer} from "./helpers/fake-server.js";
+import {registerSearchTickets} from "../../src/tools/ticket/search.js";
+import {fakeServer} from "../helpers/fake-server.js";
 
 const issue = (key, fields) => ({
   fields: {status: {name: "Open"}, summary: `S-${key}`, ...fields},

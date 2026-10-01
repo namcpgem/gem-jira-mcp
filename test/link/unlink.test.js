@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {registerUnlinkIssues} from "../src/tools/unlink-issues.js";
-import {fakeServer} from "./helpers/fake-server.js";
+import {registerUnlinkIssues} from "../../src/tools/link/unlink.js";
+import {fakeServer} from "../helpers/fake-server.js";
 
 const BUGS = {inward: "is bug of", name: "Bugs", outward: "has bug"};
 const RELATES = {inward: "relates to", name: "Relates", outward: "relates to"};

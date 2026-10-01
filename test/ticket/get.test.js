@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {registerGetTicket} from "../src/tools/get-ticket.js";
-import {fakeServer} from "./helpers/fake-server.js";
+import {registerGetTicket} from "../../src/tools/ticket/get.js";
+import {fakeServer} from "../helpers/fake-server.js";
 
 test("get_ticket formats issue fields without hitting live Jira", async () => {
   const server = fakeServer();

@@ -1,7 +1,7 @@
 import {z} from "zod";
-import {defineTool} from "../define-tool.js";
-import {jiraDownload} from "../jira-client.js";
-import {START_DATE_FIELD} from "../ticket-fields.js";
+import {defineTool} from "../../define-tool.js";
+import {jiraDownload} from "../../jira-client.js";
+import {START_DATE_FIELD} from "../../ticket-fields.js";
 
 // Formats MCP clients can render as images; SVG and the rest stay name-only.
 const IMAGE_TYPES = new Set([

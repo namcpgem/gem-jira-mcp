@@ -1,6 +1,6 @@
 import {z} from "zod";
-import {defineTool} from "../define-tool.js";
-import {EPIC_LINK_FIELD, START_DATE_FIELD} from "../ticket-fields.js";
+import {defineTool} from "../../define-tool.js";
+import {EPIC_LINK_FIELD, START_DATE_FIELD} from "../../ticket-fields.js";
 
 // Jira's REST API silently ignores certain field writes (issue-type/Sub-task
 // conversions in particular) instead of rejecting the request, so callers

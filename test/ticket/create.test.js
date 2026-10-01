@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {registerCreateTicket} from "../src/tools/create-ticket.js";
-import {fakeServer} from "./helpers/fake-server.js";
+import {registerCreateTicket} from "../../src/tools/ticket/create.js";
+import {fakeServer} from "../helpers/fake-server.js";
 
 const create = async (params, {failEstimate = false} = {}) => {
   const server = fakeServer();

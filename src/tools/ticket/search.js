@@ -1,6 +1,6 @@
 import {z} from "zod";
-import {defineTool} from "../define-tool.js";
-import {START_DATE_FIELD} from "../ticket-fields.js";
+import {defineTool} from "../../define-tool.js";
+import {START_DATE_FIELD} from "../../ticket-fields.js";
 
 const COLUMNS = [
   "KEY",

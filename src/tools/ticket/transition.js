@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {defineTool} from "../define-tool.js";
+import {defineTool} from "../../define-tool.js";
 
 // Names agents reach for that real workflows spell differently. Each maps to an
 // ordered candidate list tried against whatever this issue actually offers, so

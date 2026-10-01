@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {registerLogWork} from "../src/tools/log-work.js";
-import {fakeServer} from "./helpers/fake-server.js";
+import {registerLogWork} from "../../src/tools/worklog/log.js";
+import {fakeServer} from "../helpers/fake-server.js";
 
 const FORM_HTML =
   '<form action="x?atl_token=TOK123"><input name="startDateJS" value="27/Sep/26 9:00 AM">' +

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {registerGenerateReleaseNotes} from "../src/tools/generate-release-notes.js";
-import {fakeServer} from "./helpers/fake-server.js";
+import {registerGenerateReleaseNotes} from "../../src/tools/release/generate.js";
+import {fakeServer} from "../helpers/fake-server.js";
 
 const issue = (key, type, status) => ({
   fields: {issuetype: {name: type}, status: {name: status}, summary: key},

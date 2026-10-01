@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {defineTool} from "../define-tool.js";
+import {defineTool} from "../../define-tool.js";
 
 export const registerAddComment = (server, jiraRequest) => {
   defineTool(

@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {defineTool} from "../define-tool.js";
+import {defineTool} from "../../define-tool.js";
 
 // A link type is addressable by its name ("Bugs") or by either verb ("is bug
 // of", "has bug"), since callers usually say the relation, not the type.

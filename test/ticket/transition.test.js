@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {registerTransitionTicket} from "../src/tools/transition-ticket.js";
-import {fakeServer} from "./helpers/fake-server.js";
+import {registerTransitionTicket} from "../../src/tools/ticket/transition.js";
+import {fakeServer} from "../helpers/fake-server.js";
 
 // A workflow where no transition is literally named after its target status.
 const TRANSITIONS = [

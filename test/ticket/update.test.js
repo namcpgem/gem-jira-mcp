@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {registerUpdateTicket} from "../src/tools/update-ticket.js";
-import {fakeServer} from "./helpers/fake-server.js";
+import {registerUpdateTicket} from "../../src/tools/ticket/update.js";
+import {fakeServer} from "../helpers/fake-server.js";
 
 test("update_ticket rejects an empty update", async () => {
   const server = fakeServer();

@@ -1,4 +1,4 @@
-import {AUTH_HEADER, JIRA_HOST, jiraRequest} from "./jira-client.js";
+import {AUTH_HEADER, JIRA_HOST, jiraRequest} from "../../jira-client.js";
 
 // WorklogPRO (Deniz) work-type / activity ids, keyed by user-friendly aliases.
 export const WORK_TYPES = {

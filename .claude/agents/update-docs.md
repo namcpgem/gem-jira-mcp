@@ -11,7 +11,7 @@ Always sync every file: README.md plus every `*.md` under docs/ (glob it — do 
 
 ## Sources of truth
 
-- src/tools/\*.js — each tool's `registerTool` name, `description`, and `inputSchema` (param names + `.describe()` text + which are `.optional()`)
+- src/tools/\*\*/\*.js — each tool's (tools live in one folder per entity: ticket/, comment/, worklog/, ...) `registerTool` name, `description`, and `inputSchema` (param names + `.describe()` text + which are `.optional()`)
 - src/index.js — which tools are registered (completeness + order)
 - src/jira-client.js — REST API base path, auth scheme, and which env vars are read
 - package.json — `version`, `bin` name, dependencies, scripts
@@ -28,7 +28,7 @@ Glob `docs/*.md` and always include README.md. Update every file found. Known fi
 
 ## Steps
 
-1. Glob src/tools/\*.js and read each. Extract tool name, one-line description, and the actual inputSchema keys (mark optional ones).
+1. Glob src/tools/\*\*/\*.js and read each (skip helpers such as worklog/worklog-pro.js that register no tool). Extract tool name, one-line description, and the actual inputSchema keys (mark optional ones).
 2. Read src/jira-client.js for the base REST path, auth scheme, and env vars actually consumed.
 3. Rebuild the Tools table (tool | description | key params) in README.md and docs/USAGE.md straight from the schema — never invent params.
 4. Update Notes to match current behavior: Jira Server plain-text descriptions (no ADF), `duedate` standard field vs the configurable start-date custom field (`JIRA_START_DATE_FIELD`), JQL search syntax, `transition_ticket` resolving transition ID by status name, `update_ticket` partial-update semantics (omit to keep, `assignee=""` to unassign), and logs going to stderr.
