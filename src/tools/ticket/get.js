@@ -67,7 +67,7 @@ const formatComments = ({comments = [], total = 0} = {}) => {
   const body = shown
     .map(
       (c) =>
-        `  [${c.created?.slice(0, 10)}] ${c.author?.displayName || "Unknown"}: ${c.body}`,
+        `  #${c.id} [${c.created?.slice(0, 10)}] ${c.author?.displayName || "Unknown"}: ${c.body}`,
     )
     .join("\n");
   // Jira can also cap the inline list, so trust its total over what arrived.
@@ -75,6 +75,22 @@ const formatComments = ({comments = [], total = 0} = {}) => {
   const count =
     shown.length < all ? `${shown.length} most recent of ${all}` : all;
   return `Comments (${count}):\n${body}`;
+};
+
+// Same cap as comments; the newest worklogs are the ones people come to fix.
+const formatWorklogs = ({worklogs = [], total = 0} = {}) => {
+  if (!worklogs.length) return "Worklogs: None";
+  const shown = worklogs.slice(-COMMENT_LIMIT);
+  const body = shown
+    .map(
+      (w) =>
+        `  #${w.id} [${w.started?.slice(0, 10)}] ${w.author?.displayName || "Unknown"} ${w.timeSpent}${w.comment ? `: ${w.comment}` : ""}`,
+    )
+    .join("\n");
+  const all = Math.max(total, worklogs.length);
+  const count =
+    shown.length < all ? `${shown.length} most recent of ${all}` : all;
+  return `Worklogs (${count}):\n${body}`;
 };
 
 export const registerGetTicket = (
@@ -107,11 +123,23 @@ export const registerGetTicket = (
           .describe(
             "Return image attachments (screenshots referenced as !name.png! in the description/comments) as viewable images (default false)",
           ),
+        include_worklogs: z
+          .boolean()
+          .optional()
+          .describe(
+            "Include the ticket's worklogs with their IDs (default false, one extra request)",
+          ),
         ticket_id: z.string().describe("Jira issue key, e.g. GEM-234"),
       }),
     },
     async (
-      {ticket_id, include_comments, include_images, image_limit},
+      {
+        ticket_id,
+        include_comments,
+        include_images,
+        include_worklogs,
+        image_limit,
+      },
       jira,
     ) => {
       const issue = await jira("GET", `/issue/${ticket_id}`);
@@ -126,6 +154,11 @@ export const registerGetTicket = (
       const images = include_images
         ? await fetchImages(attachments, download, image_limit ?? IMAGE_LIMIT)
         : {blocks: [], notes: []};
+      // The issue's inline worklog field is capped by Jira and may drop the
+      // newest entries, so read the full list from its own endpoint.
+      const worklogs = include_worklogs
+        ? await jira("GET", `/issue/${ticket_id}/worklog`)
+        : null;
       const text = [
         `Key: ${issue.key}`,
         `Summary: ${f.summary}`,
@@ -140,6 +173,7 @@ export const registerGetTicket = (
         f.description ? `Description:\n${f.description}` : null,
         subtasks ? `Subtasks:\n${subtasks}` : null,
         include_comments ? formatComments(f.comment) : null,
+        worklogs ? formatWorklogs(worklogs) : null,
         line("Attachments", attachments.map((a) => a.filename).join(", ")),
         images.notes.length ? `Images:\n${images.notes.join("\n")}` : null,
       ]

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {jiraRequest} from "../src/jira-client.js";
+import {JIRA_HOST, jiraRequest} from "../src/jira-client.js";
 
 // Replaces global fetch with a scripted sequence of statuses and records how
 // many times it was actually called.
@@ -57,4 +57,18 @@ test("jiraRequest returns null for a 201 with an empty body", async () => {
     await jiraRequest("POST", "/issueLink", {type: {name: "Blocks"}}),
     null,
   );
+});
+
+test("jiraRequest sends /rest/ paths to the host, others under /rest/api/2", async () => {
+  const urls = [];
+  globalThis.fetch = async (url) => {
+    urls.push(url);
+    return {ok: true, status: 200, text: async () => "{}"};
+  };
+  await jiraRequest("GET", "/issue/GEM-1");
+  await jiraRequest("GET", "/rest/agile/1.0/board");
+  assert.deepEqual(urls, [
+    `${JIRA_HOST}/rest/api/2/issue/GEM-1`,
+    `${JIRA_HOST}/rest/agile/1.0/board`,
+  ]);
 });

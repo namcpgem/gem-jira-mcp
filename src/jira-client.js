@@ -24,8 +24,13 @@ const RETRY_STATUS = new Set([429, 500, 502, 503, 504]);
 const REPLAYABLE = new Set(["GET", "PUT", "DELETE"]);
 const MAX_RETRIES = 2;
 
+// Paths are relative to /rest/api/2 unless they name another REST API
+// themselves (e.g. /rest/agile/1.0/... for sprints and boards).
 export const jiraRequest = async (method, path, body, attempt = 0) => {
-  const res = await fetch(`${BASE}${path}`, {
+  const url = path.startsWith("/rest/")
+    ? `${JIRA_HOST}${path}`
+    : `${BASE}${path}`;
+  const res = await fetch(url, {
     body: body ? JSON.stringify(body) : undefined,
     headers: HEADERS,
     method,

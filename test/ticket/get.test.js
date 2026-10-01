@@ -63,6 +63,7 @@ test("get_ticket returns comments on request and flags truncation", async () => 
             author: {displayName: "Alice"},
             body: "the answer is 42",
             created: "2026-07-01T10:00:00.000+0700",
+            id: "10001",
           },
         ],
         total: 3,
@@ -82,7 +83,8 @@ test("get_ticket returns comments on request and flags truncation", async () => 
   const text = (await call({include_comments: true, ticket_id: "GEM-3"}))
     .content[0].text;
   assert.match(text, /Comments \(1 most recent of 3\):/);
-  assert.match(text, /\[2026-07-01\] Alice: the answer is 42/);
+  // The ID is what update_comment and delete_comment take.
+  assert.match(text, /#10001 \[2026-07-01\] Alice: the answer is 42/);
 });
 
 test("get_ticket caps a long comment thread and says it capped it", async () => {
@@ -220,4 +222,39 @@ test("get_ticket returns up to image_limit images, default 5", async () => {
   });
   assert.equal(raised.content.length, 8);
   assert.doesNotMatch(raised.content[0].text, /not shown/);
+});
+
+test("get_ticket lists worklogs with their IDs from the worklog endpoint", async () => {
+  const server = fakeServer();
+  const paths = [];
+  const fakeJira = async (_method, path) => {
+    paths.push(path);
+    if (path === "/issue/GEM-4/worklog") {
+      return {
+        total: 3,
+        worklogs: [
+          {
+            author: {displayName: "Alice"},
+            comment: "pairing",
+            id: "20001",
+            started: "2026-07-02T09:00:00.000+0700",
+            timeSpent: "2h",
+          },
+        ],
+      };
+    }
+    return {fields: {status: {name: "Open"}, summary: "Logged"}, key: "GEM-4"};
+  };
+  registerGetTicket(server, fakeJira);
+
+  const text = (
+    await server.tools.get("get_ticket")({
+      include_worklogs: true,
+      ticket_id: "GEM-4",
+    })
+  ).content[0].text;
+  assert.deepEqual(paths, ["/issue/GEM-4", "/issue/GEM-4/worklog"]);
+  assert.match(text, /Worklogs \(1 most recent of 3\):/);
+  // The ID is what update_worklog and delete_worklog take.
+  assert.match(text, /#20001 \[2026-07-02\] Alice 2h: pairing/);
 });
