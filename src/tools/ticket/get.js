@@ -20,21 +20,32 @@ const IMAGE_TYPES = new Set([
 // below still applies, so more images never means a bigger request. Max 20:
 // past 20 images in one request Claude applies a stricter per-image limit.
 const IMAGE_LIMIT = 5;
-const IMAGE_LIMIT_MAX = 20;
+export const IMAGE_LIMIT_MAX = 20;
 const IMAGE_MAX_B64 = 5_000_000;
 const IMAGES_TOTAL_B64 = 10_000_000;
 const b64Size = (bytes) => Math.ceil(bytes / 3) * 4;
 
-const fetchImages = async (attachments, download, limit) => {
+const mb = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
+
+export const fetchImages = async (attachments, download, limit) => {
   const images = attachments.filter((a) => IMAGE_TYPES.has(a.mimeType));
   const picked = [];
+  // Name each image skipped for size, so the caller knows which screenshot
+  // it has not seen and that raising image_limit will not bring it back.
+  const skipped = [];
+  let overLimit = 0;
   let budget = IMAGES_TOTAL_B64;
   for (const a of images) {
     const size = b64Size(a.size);
-    if (picked.length === limit) break;
-    if (size > IMAGE_MAX_B64 || size > budget) continue;
-    picked.push(a);
-    budget -= size;
+    if (picked.length === limit) overLimit++;
+    else if (size > IMAGE_MAX_B64)
+      skipped.push(`  ${a.filename}: not shown, too large (${mb(a.size)})`);
+    else if (size > budget)
+      skipped.push(`  ${a.filename}: not shown, total size cap reached`);
+    else {
+      picked.push(a);
+      budget -= size;
+    }
   }
   const results = await Promise.allSettled(
     picked.map((a) => download(a.content)),
@@ -48,11 +59,9 @@ const fetchImages = async (attachments, download, limit) => {
       blocks.push({data: r.value, mimeType: a.mimeType, type: "image"});
     } else notes.push(`  ${a.filename}: download failed (${r.reason.message})`);
   });
-  const skipped = images.length - picked.length;
-  if (skipped)
-    notes.push(
-      `  ${skipped} more image(s) not shown (max ${limit} images, ~3.7 MB each, ~7.5 MB total)`,
-    );
+  notes.push(...skipped);
+  if (overLimit)
+    notes.push(`  ${overLimit} more image(s) not shown (max ${limit} images)`);
   return {blocks, notes};
 };
 
@@ -102,7 +111,8 @@ export const registerGetTicket = (
     server,
     "get_ticket",
     {
-      description: "Get full details of a Jira ticket by its key",
+      description:
+        "Get full details of a Jira ticket by its key. For a single comment (a ?focusedCommentId= link), use get_comment instead.",
       inputSchema: z.object({
         image_limit: z
           .number()
@@ -142,7 +152,16 @@ export const registerGetTicket = (
       },
       jira,
     ) => {
-      const issue = await jira("GET", `/issue/${ticket_id}`);
+      // Without ?fields= Jira returns every field, inline comments and
+      // worklogs included; ask only for what this tool prints.
+      const fields = [
+        "summary,status,assignee,reporter,priority,duedate,timetracking",
+        `labels,description,subtasks,attachment,${START_DATE_FIELD}`,
+        include_comments ? "comment" : null,
+      ]
+        .filter(Boolean)
+        .join(",");
+      const issue = await jira("GET", `/issue/${ticket_id}?fields=${fields}`);
       const f = issue.fields;
       const subtasks = (f.subtasks || [])
         .map((s) => `  - ${s.key}: ${s.fields.summary}`)

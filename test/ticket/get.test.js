@@ -3,11 +3,16 @@ import {test} from "node:test";
 import {registerGetTicket} from "../../src/tools/ticket/get.js";
 import {fakeServer} from "../helpers/fake-server.js";
 
+const FIELDS =
+  "summary,status,assignee,reporter,priority,duedate,timetracking," +
+  "labels,description,subtasks,attachment,customfield_11300";
+
 test("get_ticket formats issue fields without hitting live Jira", async () => {
   const server = fakeServer();
   const fakeJira = async (method, path) => {
     assert.equal(method, "GET");
-    assert.equal(path, "/issue/GEM-1");
+    // Only the fields the tool prints; comments stay out unless asked for.
+    assert.equal(path, `/issue/GEM-1?fields=${FIELDS}`);
     return {
       fields: {
         assignee: {displayName: "Alice"},
@@ -55,7 +60,12 @@ test("get_ticket omits unset fields but keeps the ones that are set", async () =
 
 test("get_ticket returns comments on request and flags truncation", async () => {
   const server = fakeServer();
-  const fakeJira = async () => ({
+  const paths = [];
+  const fakeJira = async (_method, path) => {
+    paths.push(path);
+    return issue;
+  };
+  const issue = {
     fields: {
       comment: {
         comments: [
@@ -72,7 +82,7 @@ test("get_ticket returns comments on request and flags truncation", async () => 
       summary: "Has comments",
     },
     key: "GEM-3",
-  });
+  };
   registerGetTicket(server, fakeJira);
   const call = server.tools.get("get_ticket");
 
@@ -82,6 +92,7 @@ test("get_ticket returns comments on request and flags truncation", async () => 
   );
   const text = (await call({include_comments: true, ticket_id: "GEM-3"}))
     .content[0].text;
+  assert.equal(paths[1], `/issue/GEM-3?fields=${FIELDS},comment`);
   assert.match(text, /Comments \(1 most recent of 3\):/);
   // The ID is what update_comment and delete_comment take.
   assert.match(text, /#10001 \[2026-07-01\] Alice: the answer is 42/);
@@ -156,7 +167,9 @@ test("get_ticket returns image attachments as image blocks on request", async ()
     content[0].text,
     /gone.jpg: download failed \(Jira attachment 404\)/,
   );
-  assert.match(content[0].text, /1 more image\(s\) not shown/);
+  // Skipped for size, not count: raising image_limit would not help.
+  assert.match(content[0].text, /huge.png: not shown, too large \(9.0 MB\)/);
+  assert.doesNotMatch(content[0].text, /more image/);
 });
 
 test("get_ticket keeps returned images within a base64 byte budget", async () => {
@@ -187,7 +200,7 @@ test("get_ticket keeps returned images within a base64 byte budget", async () =>
   });
   assert.deepEqual(downloads, ["a", "b"]);
   assert.equal(content.length, 3);
-  assert.match(content[0].text, /1 more image\(s\) not shown/);
+  assert.match(content[0].text, /c.png: not shown, total size cap reached/);
 });
 
 test("get_ticket returns up to image_limit images, default 5", async () => {
@@ -253,7 +266,10 @@ test("get_ticket lists worklogs with their IDs from the worklog endpoint", async
       ticket_id: "GEM-4",
     })
   ).content[0].text;
-  assert.deepEqual(paths, ["/issue/GEM-4", "/issue/GEM-4/worklog"]);
+  assert.deepEqual(paths, [
+    `/issue/GEM-4?fields=${FIELDS}`,
+    "/issue/GEM-4/worklog",
+  ]);
   assert.match(text, /Worklogs \(1 most recent of 3\):/);
   // The ID is what update_worklog and delete_worklog take.
   assert.match(text, /#20001 \[2026-07-02\] Alice 2h: pairing/);
