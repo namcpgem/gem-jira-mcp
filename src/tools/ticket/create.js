@@ -17,7 +17,9 @@ export const registerCreateTicket = (server, jiraRequest) => {
         due_date: z.string().optional().describe("Due date YYYY-MM-DD"),
         issue_type: z
           .string()
-          .describe("Issue type: Story, Task, Bug, Sub-task"),
+          .describe(
+            'Issue type name exactly as defined in the project, e.g. Story, Task, Bug, Sub-task, or a custom type like "QA Sub-Task"',
+          ),
         labels: z.array(z.string()).optional().describe("Labels to assign"),
         original_estimate: z
           .string()
@@ -26,7 +28,9 @@ export const registerCreateTicket = (server, jiraRequest) => {
         parent_key: z
           .string()
           .optional()
-          .describe("Parent ticket key for Sub-task"),
+          .describe(
+            "Parent ticket key for any sub-task type (Sub-task or a custom one)",
+          ),
         project: z.string().describe("Project key, e.g. GEM"),
         start_date: z.string().optional().describe("Start date YYYY-MM-DD"),
         summary: z.string().describe("Issue title"),

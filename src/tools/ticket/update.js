@@ -49,7 +49,9 @@ export const registerUpdateTicket = (server, jiraRequest) => {
         issue_type: z
           .string()
           .optional()
-          .describe("Issue type: Story, Task, Bug, Sub-task"),
+          .describe(
+            'Issue type name exactly as defined in the project, e.g. Story, Task, Bug, Sub-task, or a custom type like "QA Sub-Task"',
+          ),
         labels: z.array(z.string()).optional().describe("Labels to set"),
         original_estimate: z
           .string()
@@ -58,7 +60,9 @@ export const registerUpdateTicket = (server, jiraRequest) => {
         parent_key: z
           .string()
           .optional()
-          .describe("Parent ticket key for Sub-task"),
+          .describe(
+            "Parent ticket key for any sub-task type (Sub-task or a custom one)",
+          ),
         priority: z
           .string()
           .optional()
